@@ -2,8 +2,8 @@ from protocol import Protocol
 from mpc.beaver import SquareActivation
 
 class PtlActBeaverPrepare(Protocol):
-    def __init__(self, s, name):
-        super().__init__(s, name)
+    def __init__(self, s):
+        super().__init__(s, 'act-beaver-prepare')
         
     def server_side(self):
         pass
@@ -13,8 +13,8 @@ class PtlActBeaverPrepare(Protocol):
     
 
 class PtlActBeaverOnline(Protocol):
-    def __init__(self, s, name):
-        super().__init__(s, name)
+    def __init__(self, s):
+        super().__init__(s, 'act-beaver-online')
         
 
     def server_side(self):

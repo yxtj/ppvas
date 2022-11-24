@@ -1,8 +1,8 @@
 from protocol import Protocol
 
 class PtlActGcPrepare(Protocol):
-    def __init__(self, s, name):
-        super().__init__(s, name)
+    def __init__(self, s):
+        super().__init__(s, 'act-gc-prepare')
         
     def server_side(self):
         pass
@@ -12,8 +12,8 @@ class PtlActGcPrepare(Protocol):
     
 
 class PtlActGcOnline(Protocol):
-    def __init__(self, s, name):
-        super().__init__(s, name)
+    def __init__(self, s):
+        super().__init__(s, 'act-gc-online')
         
     def server_side(self):
         pass

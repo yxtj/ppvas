@@ -1,8 +1,8 @@
 from protocol import Protocol
 
 class PtlActPlainPrepare(Protocol):
-    def __init__(self, s, name):
-        super().__init__(s, name)
+    def __init__(self, s):
+        super().__init__(s, 'act-plain-prepare')
         
     def server_side(self):
         pass
@@ -12,8 +12,8 @@ class PtlActPlainPrepare(Protocol):
         
         
 class PtlActPlainOnline(Protocol):
-    def __init__(self, s, name):
-        super().__init__(s, name)
+    def __init__(self, s):
+        super().__init__(s, 'act-plain-online')
         
     def server_side(self):
         pass
