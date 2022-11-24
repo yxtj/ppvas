@@ -3,6 +3,8 @@ import time, os
 import numpy as np
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import struct
+import io
+import torch
 
 BF_SZ = 4096
 
@@ -70,7 +72,14 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         s = d.sum()
         print(f"4, receive from [{self.client_address}]: {len(data)} {d.shape} {s}")
         self.request.sendall(struct.pack('!f', s)+struct.pack('!'+'i'*len(d.shape), *d.shape))
+        # 5. torch tensor
+        data = self.request.recv(BF_SZ)
+        d = torch.load(io.BytesIO(data))
+        s = d.sum()
+        print(f"5, receive from [{self.client_address}]: {len(data)} {d.shape} {s}")
+        self.request.sendall(struct.pack('!f', s))
         print('close connection')
+        
         
 host, port = "localhost", 8000
 with socketserver.TCPServer((host, port), MyTCPHandler) as server:

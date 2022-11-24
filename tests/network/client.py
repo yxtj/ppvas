@@ -2,6 +2,8 @@ import socket
 import numpy as np
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import struct
+import io
+import torch
 
 BF_SZ = 4096
 host, port = "localhost", 8000
@@ -46,7 +48,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     n = len(data[4:])//4
     shape = struct.unpack('!'+'i'*n, data[4:])
     print(f"4, receive from [{host}]: {sum2}, {shape}. The difference is {sum1-sum2}")
-    
-    
-    
+    # 5. torch tensor
+    t = torch.rand((20, 20))
+    buffer = io.BytesIO()
+    torch.save(t, buffer)
+    n = buffer.tell()
+    buffer.seek(0)
+    sum1 = t.sum()
+    s.sendall(buffer.read())
+    data = s.recv(BF_SZ)
+    sum2 = struct.unpack('!f', data[:4])[0]
+    print(f"5, receive from [{host}]: {sum2}. The difference is {sum1-sum2}")
     
