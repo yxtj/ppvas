@@ -3,8 +3,8 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
 import copy
-from model.modeladapter import ModelAdapter, flatten_model
-
+from model.modeladapter import ModelAdapter
+from model.util import flatten_model
 
 
 class VGG11(ModelAdapter):
@@ -55,27 +55,22 @@ class VGG11(ModelAdapter):
                 lyr.bias.data.zero_()
         return model
     
-    def compute_shape(self, model, inshape):
-        t = torch.zeros(inshape)
-        shapes = [inshape]
-        for i, lyr in enumerate(model):
-            t = lyr(t)
-            shapes.append(t.shape)
-        return shapes
-    
     def setup_secret_share(self, shapes:list):
         pass
 
-    def process_iframe(self, data):
-        img_t = self.preprocess(data)
+    def process_iframe(self, image):
+        img_t = self.preprocess(image)
         d = torch.unsqueeze(img_t, 0)
         mid = []
         with torch.no_grad():
             for i, lyr in enumerate(self.imodel):
+                # linear layer
                 if isinstance(lyr, (nn.Conv2d, nn.Linear)):
                     d = lyr(d)
+                # pooling layer -> convert to linear layer
                 elif isinstance(lyr, nn.AvgPool2d):
                     d = lyr(d)
+                # non-linear layer
                 elif isinstance(lyr, nn.ReLU):
                     d = lyr(d)
                 else:
@@ -86,3 +81,4 @@ class VGG11(ModelAdapter):
     
     def process_dframe(self, data):
         return super().process_dframe(data)
+    
