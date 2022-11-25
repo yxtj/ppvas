@@ -7,16 +7,41 @@ class PtlCommNonZeroBoundBox(Protocol):
     def __init__(self, s):
         super().__init__(s, 'comm-nonzero-bb')
 
-    def send_bb(self, shape:tuple[int], start_coord:tuple[int], data:torch.Tensor):
+    def send_bb(self, data:torch.Tensor):
+        shape = data.shape
+        bb_idx, bdata = self.pick_non_zero_bb(data)
+        bb_start_idx = (idx[0] for idx in bb_idx)
         send_shape(self.s, shape)
-        send_shape(self.s, start_coord)
+        send_shape(self.s, bb_start_idx)
         send_torch(self.s, data)
 
     def recv_bb(self):
         shape = recv_shape(self.s)
         start_coord = recv_shape(self.s)
         tensor = recv_torch(self.s)
-        return shape, start_coord, tensor
+        res = self.make_from_bb(shape, start_coord, tensor)
+        return res
+    
+    def pick_non_zero_bb(self, data:torch.Tensor):
+        shape = data.shape
+        ndim = len(shape)
+        nz_idx = torch.nonzero(data, as_tuple=True)
+        bb_idx = [(one_dim_idx.min(), one_dim_idx.max()) for one_dim_idx in nz_idx]
+        del nz_idx
+        if ndim == 2:
+            res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1]
+        elif ndim == 3:
+            res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1]
+        elif ndim == 4:
+            res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1, bb_idx[3][0]:bb_idx[3][1]+1]
+        elif ndim == 5:
+            res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1, bb_idx[3][0]:bb_idx[3][1]+1, bb_idx[4][0]:bb_idx[4][1]+1]
+        return bb_idx, res
+        rows = torch.any(data, 1)
+        cols = torch.any(data, 0)
+        ymin, ymax = torch.where(rows)[0][[0, -1]]
+        xmin, xmax = torch.where(cols)[0][[0, -1]]
+        return data[ymin:ymax+1, xmin:xmax+1]
     
     def make_from_bb(self, shape:tuple[int], start_coord:tuple[int], data:torch.Tensor):
         c = start_coord
