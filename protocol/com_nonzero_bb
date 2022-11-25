@@ -1,0 +1,50 @@
+from protocol.protocol import Protocol
+import struct
+import torch
+from protocol.util import send_torch, recv_torch, send_shape, recv_shape
+
+class PtlCommNonZeroBoundBox(Protocol):
+    def __init__(self, s):
+        super().__init__(s, 'comm-nonzero-bb')
+
+    def send_bb(self, shape:tuple[int], start_coord:tuple[int], data:torch.Tensor):
+        send_shape(self.s, shape)
+        send_shape(self.s, start_coord)
+        send_torch(self.s, data)
+
+    def recv_bb(self):
+        shape = recv_shape(self.s)
+        start_coord = recv_shape(self.s)
+        tensor = recv_torch(self.s)
+        return shape, start_coord, tensor
+    
+    def make_from_bb(self, shape:tuple[int], start_coord:tuple[int], data:torch.Tensor):
+        c = start_coord
+        s = data.shape
+        assert len(shape) == len(s) == len(c)
+        res = torch.zeros(shape)
+        if len(s) == 2:
+            res[c[0]:c[0]+s[0], c[1]:c[1]+s[1]] = data
+        elif len(s) == 3:
+            res[c[0]:c[0]+s[0], c[1]:c[1]+s[1], c[2]:c[2]+s[2]] = data
+        elif len(s) == 4:
+            res[c[0]:c[0]+s[0], c[1]:c[1]+s[1], c[2]:c[2]+s[2], c[3]:c[3]+s[3]] = data
+        elif len(s) == 5:
+            res[c[0]:c[0]+s[0], c[1]:c[1]+s[1], c[2]:c[2]+s[2], c[3]:c[3]+s[3], c[4]:c[4]+s[4]] = data
+        return res
+
+    def client_side(self, shape:tuple[int]=None, start_coord:tuple[int]=None, data:torch.Tensor=None):
+        if shape is not None and start_coord is not None and data is not None:
+            self.send_name()
+            self.send_bb(shape, start_coord, data)
+        else:
+            self.check_name()
+            return self.recv_bb()
+
+    def server_side(self, shape:tuple[int]=None, start_coord:tuple[int]=None, data:torch.Tensor=None):
+        if shape is not None and start_coord is not None and data is not None:
+            self.send_name()
+            self.send_bb(shape, start_coord, data)
+        else:
+            self.check_name()
+            return self.recv_bb()

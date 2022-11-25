@@ -9,7 +9,8 @@ def serialize_numpy_meta(data:np.ndarray):
     shape = data.shape
     r = struct.pack('!iii', data.nbytes, len(type_str), len(shape))+type_str+struct.pack('!'+'i'*len(shape), *shape)
     return r
-    
+
+# numpy
     
 def send_numpy(s:socket.socket, data:np.ndarray):
     type_str = data.dtype.str.encode()
@@ -18,8 +19,7 @@ def send_numpy(s:socket.socket, data:np.ndarray):
               struct.pack('!'+'i'*len(shape), *shape))
     s.sendall(data.tobytes())
     
-    
-def recv_numpy(s:socket.socket, buf_sz:int=4096):
+def recv_numpy(s:socket.socket, buf_sz:int=4096) -> np.ndarray:
     data = s.recv(buf_sz)
     nbytes, len_type, len_shape = struct.unpack('!iii', data[:12])
     header_len = 12 + len_type + len_shape*4
@@ -37,6 +37,7 @@ def recv_numpy(s:socket.socket, buf_sz:int=4096):
     result = np.frombuffer(buffer, dtype=type_str).reshape(shape)
     return result
 
+# tensor
 
 def send_torch(s:socket.socket, data:torch.Tensor):
     buffer = io.BytesIO()
@@ -45,8 +46,7 @@ def send_torch(s:socket.socket, data:torch.Tensor):
     buffer.seek(0)
     s.sendall(buffer.read())
     
-    
-def recv_torch(s:socket.socket, buf_sz:int=4096):
+def recv_torch(s:socket.socket, buf_sz:int=4096) -> torch.Tensor:
     data = s.recv(buf_sz)
     nbytes, = struct.unpack('!i', data[:4])
     buffer = []
@@ -60,3 +60,16 @@ def recv_torch(s:socket.socket, buf_sz:int=4096):
     buffer = b''.join(buffer)
     result = torch.load(io.BytesIO(buffer))
     return result
+
+# shape tuple
+
+def send_shape(s:socket.socket, shape:tuple[int]):
+    s.sendall(struct.pack('!i', len(shape)))
+    s.sendall(struct.pack('!'+'i'*len(shape), *shape))
+    
+def recv_shape(s:socket.socket) -> tuple[int]:
+    data = s.recv(4)
+    n, = struct.unpack('!i', data)
+    data = s.recv(n*4)
+    shape = struct.unpack('!'+'i'*n, data)
+    return shape
