@@ -1,7 +1,6 @@
 import torch
 
 from protocol.act_base import ProtocolActBase
-from protocol.util import send_torch, recv_torch
 
 class ProtocolActScale(ProtocolActBase):
     def __init__(self, s, shape):
@@ -14,22 +13,12 @@ class ProtocolActScale(ProtocolActBase):
     def server_init(self):
         self.m = torch.rand(self.shape)
     
-    def server_send(self, data:torch.Tensor):
-        data *= self.m
-        send_torch(self.s, data)
-        
-    def client_recv(self):
-        data = recv_torch(self.s)
-        return data
+    def server_send_prepare(self, data:torch.Tensor) -> torch.Tensor:
+        return data * self.m
     
     def activate(self, data:torch.Tensor) -> torch.Tensor:
         return torch.relu(data + self.offset)
     
-    def client_send(self, data:torch.Tensor):
-        send_torch(self.s, data - self.next_share)
-    
-    def server_recv(self):
-        data = recv_torch(self.s)
-        return data
-    
+    def client_send_prepare(self, data:torch.Tensor) -> torch.Tensor:
+        return data - self.next_share
     
