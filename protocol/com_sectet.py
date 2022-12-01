@@ -5,7 +5,7 @@ from protocol.util import send_torch, recv_torch
 
 class PtlCommSecretShare(Protocol):
     def __init__(self, s):
-        super().__init__(s, 'comm-share')
+        super().__init__(s, 'comm-secret')
 
     def client_side(self):
         self.check_name()

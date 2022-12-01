@@ -1,6 +1,6 @@
-from protocol.protocol import Protocol
-import struct
 import torch
+
+from protocol.protocol import Protocol
 from protocol.util import send_torch, recv_torch, send_shape, recv_shape
 
 class PtlCommNonZeroBoundBox(Protocol):
@@ -25,6 +25,8 @@ class PtlCommNonZeroBoundBox(Protocol):
     def pick_non_zero_bb(self, data:torch.Tensor):
         shape = data.shape
         ndim = len(shape)
+        assert 2 <= ndim <= 4, 'only support 2D, 3D, 4D tensor'
+        # TODO: optimize the method of finding non-zero bounding box
         nz_idx = torch.nonzero(data, as_tuple=True)
         bb_idx = [(one_dim_idx.min(), one_dim_idx.max()) for one_dim_idx in nz_idx]
         del nz_idx
@@ -34,8 +36,8 @@ class PtlCommNonZeroBoundBox(Protocol):
             res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1]
         elif ndim == 4:
             res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1, bb_idx[3][0]:bb_idx[3][1]+1]
-        elif ndim == 5:
-            res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1, bb_idx[3][0]:bb_idx[3][1]+1, bb_idx[4][0]:bb_idx[4][1]+1]
+        #elif ndim == 5:
+        #    res = data[bb_idx[0][0]:bb_idx[0][1]+1, bb_idx[1][0]:bb_idx[1][1]+1, bb_idx[2][0]:bb_idx[2][1]+1, bb_idx[3][0]:bb_idx[3][1]+1, bb_idx[4][0]:bb_idx[4][1]+1]
         return bb_idx, res
         rows = torch.any(data, 1)
         cols = torch.any(data, 0)
@@ -58,16 +60,18 @@ class PtlCommNonZeroBoundBox(Protocol):
             res[c[0]:c[0]+s[0], c[1]:c[1]+s[1], c[2]:c[2]+s[2], c[3]:c[3]+s[3], c[4]:c[4]+s[4]] = data
         return res
 
-    def client_side(self, shape:tuple[int]=None, start_coord:tuple[int]=None, data:torch.Tensor=None):
-        if shape is not None and start_coord is not None and data is not None:
+    def client_side(self, data:torch.Tensor=None):
+        if data is not None:
+            shape, start_coord, data = self.pick_non_zero_bb(data)
             self.send_name()
             self.send_bb(shape, start_coord, data)
         else:
             self.check_name()
             return self.recv_bb()
 
-    def server_side(self, shape:tuple[int]=None, start_coord:tuple[int]=None, data:torch.Tensor=None):
-        if shape is not None and start_coord is not None and data is not None:
+    def server_side(self, data:torch.Tensor=None):
+        if data is not None:
+            shape, start_coord, data = self.pick_non_zero_bb(data)
             self.send_name()
             self.send_bb(shape, start_coord, data)
         else:
