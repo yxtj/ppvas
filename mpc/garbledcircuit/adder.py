@@ -1,52 +1,36 @@
-from mpc.garbledcircuit.basic import Wire, BuildUnit
+import numpy as np
+from garbled_circuit import GarbledCircuit
 
-class OneBitAdder():
-    '''
-    input two bits x and y, output their sum and carry
-    '''
-    def __init__(self, id:int):
-        self.id = id
-        self.table = {}
-
-    def setup(self, xunits:list[BuildUnit], yunits:list[BuildUnit], cunits:list[BuildUnit]):
-        plain_table = {}
-        for x in xunits:
-            for y in  yunits:
-                for c in cunits:
-                    idx = (x.marker<<2) + (y.marker<<1) + c.marker
-                    s = x.pvalue ^ y.pvalue ^ c.pvalue
-                    c = x.pvalue & y.pvalue | x.pvalue & c.pvalue | y.pvalue & c.pvalue
-                    plain_table[idx] = (s, c)
-        for name, value in plain_table.items():
-            self.table[name] = Wire(value, 0)
-    
-    def get_input_wires(self):
-        pass
+class NBitAdder:
+    def __init__(self, n):
+        self.n = n
+        self.circuit = GarbledCircuit(2 * n, n + 1)
+        self.encrypt_keys, self.decrypt_keys = self.circuit.generate_keys()
         
-    def get_output_wires(self):
-        pass
-
-    def add(self, xwire:Wire, ywire:Wire, cwire:Wire):
-        idx = (xwire.marker<<2) + (ywire.marker<<1) + cwire.marker
-        return self.table[idx]
+        self.circuit.xor_gate(0, self.n, 0)
+        self.circuit.and_gate(0, self.n + 1, self.n + 1)
+        self.circuit.xor_gate(1, self.n + 1, self.n + 1)
+        for i in range(1, self.n):
+            self.circuit.xor_gate(i, self.n + i, i)
+            self.circuit.and_gate(i, self.n + i + 1, self.n + i + 1)
+            self.circuit.or_gate(self.n + i, self.n + i + 1, self.n + i)
     
-    
-class GCAdder():
-    def __init__(self, nbits):
-        self.nbits = nbits
-        self.circuit = []
+    def encrypt_inputs(self, a, b):
+        return self.circuit.encrypt_inputs(self.encrypt_keys, [a, b, [0] * (self.n - 1)])
 
-    def setup(self, xunits:list, yunits:list):
-        self.adder = OneBitAdder()
-        self.adder.setup(xunits, yunits, xunits)
-        c = BuildUnit(False, 0, 0)
-        for i in range(self.nbits):
-            adder = OneBitAdder()
-            xu = xunits[i]
-            yu = yunits[i]
-            #cu = 
-            #adder.setup(xu, yu, cu)
+    def decrypt_outputs(self, encrypted_outputs):
+        return self.circuit.decrypt_outputs(self.decrypt_keys, encrypted_outputs)
 
-    def add(self, data1, data2):
-        return data1 + data2
+    def add(self, a, b):
+        encrypted_outputs = self.circuit.evaluate([a, b])
+        return self.circuit.decrypt_outputs(self.decrypt_keys, encrypted_outputs)
+        
+    def add_cipher(self, a, b):
+        encrypted_intput = self.encrypt_inputs(a, b)
+        encrypted_output = self.circuit.evaluate(encrypted_intput)
+        return encrypted_output
     
+    def add_plain(self, a, b):
+        encrypted_intput = self.encrypt_inputs(a, b)
+        encrypted_output = self.circuit.evaluate(encrypted_intput)
+        return self.decrypt_outputs(encrypted_output)

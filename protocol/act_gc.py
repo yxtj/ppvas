@@ -1,23 +1,22 @@
-from protocol import Protocol
+import torch
+from .act_base import ProtocolActBase
+from mpc.gc import GarbledCircuit
 
-class PtlActGcPrepare(Protocol):
+class PtlActGarbledCircuit(ProtocolActBase):
     def __init__(self, s):
-        super().__init__(s, 'act-gc-prepare')
-        
-    def server_side(self):
+        super().__init__(s, 'act-gc')
+    
+    def client_init(self):
         pass
     
-    def client_side(self):
+    def server_init(self):
         pass
     
-
-class PtlActGcOnline(Protocol):
-    def __init__(self, s):
-        super().__init__(s, 'act-gc-online')
-        
-    def server_side(self):
-        pass
+    def server_send_prepare(self, data:torch.Tensor) -> torch.Tensor:
+        return data
     
-    def client_side(self):
-        pass
+    def activate(self, data:torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
     
+    def client_send_prepare(self, data:torch.Tensor) -> torch.Tensor:
+        return data

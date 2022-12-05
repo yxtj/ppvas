@@ -1,6 +1,6 @@
-from mpc.activation import Activation
-from mpc.garbledcircuit.adder import GCAdder
-from mpc.garbledcircuit.relu import GCReLU
+from .activation import Activation
+from .garbledcircuit.adder import GCAdder
+from .garbledcircuit.relu import GCReLU
 
 class GCActivation(Activation):
     def __init__(self, share):
