@@ -11,7 +11,7 @@ class ReLUClient(LayerClient):
         self.layer = torch.nn.ReLU()
         
     def offline(self) -> None:
-        pass
+        return
     
     def online(self, xm) -> torch.Tensor:
         return self.layer(xm)
@@ -21,9 +21,10 @@ class ReLUServer(LayerServer):
                  layer: torch.nn.Module, m_last: torch.Tensor) -> None:
         assert isinstance(layer, nn.ReLU)
         super().__init__(socket, ishape, oshape, layer, m_last)
+        self.m = m_last
         
     def offline(self) -> None:
-        pass
+        return
     
     def online(self) -> None:
-        pass
+        return
