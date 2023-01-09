@@ -3,7 +3,7 @@ from comm.util import send_torch, recv_torch
 
 from socket import socket
 import torch
-import torch.nn as nn
+#import torch.nn as nn
 from torch_extension.shortcut import ShortCut
 
 class ShortCutClient(LayerClient):
