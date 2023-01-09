@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import layer
-from ..layer.torch_extension.shortcut import ShortCut
+from torch_extension.shortcut import ShortCut
 
 
 def compute_shape(model, inshape):
@@ -26,6 +26,8 @@ def make_server_model(socket, model, inshape):
             layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, nn.MaxPool2d):
             layers.append(layer.maxpool.MaxPoolServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.Flatten):
+            layers.append(layer.flatten.FlattenServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, ShortCut):
             offset = lyr.otherlayer
             mother = layers[-offset].m
@@ -47,6 +49,8 @@ def make_client_model(socket, model, inshape):
             layers.append(layer.relu.ReLUClient(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, nn.MaxPool2d):
             layers.append(layer.maxpool.MaxPoolClient(socket, shapes[i], shapes[i+1], lyr))
+        elif isinstance(lyr, nn.Flatten):
+            layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, ShortCut):
             offset = lyr.otherlayer
             rother = layers[-offset].r

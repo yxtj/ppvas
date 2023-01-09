@@ -3,4 +3,5 @@ from . import conv
 from . import fc
 from . import relu
 from . import maxpool
+from . import flatten
 from . import shortcut
