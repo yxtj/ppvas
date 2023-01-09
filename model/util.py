@@ -1,14 +1,10 @@
 import torch
 import torch.nn as nn
-
-def flatten_model(model:nn.Module) -> list:
-    l = list(model.children())
-    if len(l) == 0:
-        return model
-    return [flatten_model(m) for m in l]
+import layer
+from ..layer.torch_extension.shortcut import ShortCut
 
 
-def compute_shape(model:nn.Module, inshape:tuple) -> list[tuple]:
+def compute_shape(model, inshape):
     t = torch.zeros(inshape)
     shapes = [inshape]
     for i, lyr in enumerate(model):
@@ -16,3 +12,47 @@ def compute_shape(model:nn.Module, inshape:tuple) -> list[tuple]:
         shapes.append(t.shape)
     return shapes
 
+
+def make_server_model(socket, model, inshape):
+    shapes = compute_shape(model, inshape)
+    layers = []
+    mlast = 1
+    for i, lyr in enumerate(model):
+        if isinstance(lyr, nn.Conv2d):
+            layers.append(layer.conv.Conv2DServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.Linear):
+            layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.ReLU):
+            layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.MaxPool2d):
+            layers.append(layer.maxpool.MaxPoolServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, ShortCut):
+            offset = lyr.otherlayer
+            mother = layers[-offset].m
+            layers.append(layer.shortcut.ShortCutServer(socket, shapes[i], shapes[i+1], lyr, mlast, mother))
+        else:
+            raise Exception("Unknown layer type: " + str(lyr))
+        mlast = layers[-1].m
+    return layers
+    
+def make_client_model(socket, model, inshape):
+    shapes = compute_shape(model, inshape)
+    layers = []
+    for i, lyr in enumerate(model):
+        if isinstance(lyr, nn.Conv2d):
+            layers.append(layer.conv.Conv2DClient(socket, shapes[i], shapes[i+1], lyr))
+        elif isinstance(lyr, nn.Linear):
+            layers.append(layer.fc.FcClient(socket, shapes[i], shapes[i+1], lyr))
+        elif isinstance(lyr, nn.ReLU):
+            layers.append(layer.relu.ReLUClient(socket, shapes[i], shapes[i+1], lyr))
+        elif isinstance(lyr, nn.MaxPool2d):
+            layers.append(layer.maxpool.MaxPoolClient(socket, shapes[i], shapes[i+1], lyr))
+        elif isinstance(lyr, ShortCut):
+            offset = lyr.otherlayer
+            rother = layers[-offset].r
+            layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1], lyr, rother))
+        else:
+            raise Exception("Unknown layer type: " + str(lyr))
+    return layers
+    
+    
