@@ -12,30 +12,6 @@ def compute_shape(model, inshape):
         shapes.append(t.shape)
     return shapes
 
-
-def make_server_model(socket, model, inshape):
-    shapes = compute_shape(model, inshape)
-    layers = []
-    mlast = 1
-    for i, lyr in enumerate(model):
-        if isinstance(lyr, nn.Conv2d):
-            layers.append(layer.conv.Conv2DServer(socket, shapes[i], shapes[i+1], lyr, mlast))
-        elif isinstance(lyr, nn.Linear):
-            layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr, mlast))
-        elif isinstance(lyr, nn.ReLU):
-            layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr, mlast))
-        elif isinstance(lyr, nn.MaxPool2d):
-            layers.append(layer.maxpool.MaxPoolServer(socket, shapes[i], shapes[i+1], lyr, mlast))
-        elif isinstance(lyr, nn.Flatten):
-            layers.append(layer.flatten.FlattenServer(socket, shapes[i], shapes[i+1], lyr, mlast))
-        elif isinstance(lyr, ShortCut):
-            offset = lyr.otherlayer
-            mother = layers[-offset].m
-            layers.append(layer.shortcut.ShortCutServer(socket, shapes[i], shapes[i+1], lyr, mlast, mother))
-        else:
-            raise Exception("Unknown layer type: " + str(lyr))
-        mlast = layers[-1].m
-    return layers
     
 def make_client_model(socket, model, inshape):
     shapes = compute_shape(model, inshape)
@@ -52,11 +28,42 @@ def make_client_model(socket, model, inshape):
         elif isinstance(lyr, nn.Flatten):
             layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, ShortCut):
-            offset = lyr.otherlayer
-            rother = layers[-offset].r
-            layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1], lyr, rother))
+            offset = lyr.otherlayer # a negative integer
+            rother = layers[offset].r
+            layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1], lyr))
+            layers[-1].setup(rother)
+        elif isinstance(lyr, nn.Softmax):
+            layers.append(layer.softmax.SoftmaxClient(socket, shapes[i], shapes[i+1], lyr))
         else:
             raise Exception("Unknown layer type: " + str(lyr))
     return layers
-    
-    
+
+
+def make_server_model(socket, model, inshape):
+    shapes = compute_shape(model, inshape)
+    layers = []
+    to_buffer = []
+    mlast = 1
+    for i, lyr in enumerate(model):
+        if isinstance(lyr, nn.Conv2d):
+            layers.append(layer.conv.Conv2DServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.Linear):
+            layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.ReLU):
+            layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.MaxPool2d):
+            layers.append(layer.maxpool.MaxPoolServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.Flatten):
+            layers.append(layer.flatten.FlattenServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, ShortCut):
+            offset = lyr.otherlayer # a negative integer
+            mother = layers[offset].m
+            layers.append(layer.shortcut.ShortCutServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+            layers[-1].setup(mother)
+            to_buffer.append(i + offset)
+        elif isinstance(lyr, nn.Softmax):
+            layers.append(layer.softmax.SoftmaxServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        else:
+            raise Exception("Unknown layer type: " + str(lyr))
+        mlast = layers[-1].m
+    return layers, to_buffer

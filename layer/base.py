@@ -15,6 +15,9 @@ class LayerClient():
         self.r = None
         self.pre = None
     
+    def setup(self, **kwargs):
+        return
+    
     def offline(self) -> None:
         self.set_r()
         # TODO: change to HE (encrypt and send, receive and decrypt)
@@ -49,6 +52,9 @@ class LayerServer():
         assert mlast.shape == ishape
         self.layer = layer
         self.m = None
+    
+    def setup(self, **kwargs):
+        return
     
     def offline(self) -> None:
         raise NotImplementedError

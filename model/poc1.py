@@ -14,7 +14,8 @@ Poc1Model = nn.Sequential(
     nn.Conv2d(5, 10, 3),
     nn.ReLU(),
     nn.Flatten(),
-    nn.Linear(360, 10)
+    nn.Linear(360, 10),
+    nn.Softmax()
 )
 
 class Poc1Client():

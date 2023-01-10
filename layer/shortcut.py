@@ -3,28 +3,32 @@ from comm.util import send_torch, recv_torch
 
 from socket import socket
 import torch
-#import torch.nn as nn
+# import torch.nn as nn
 from torch_extension.shortcut import ShortCut
 
 class ShortCutClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 rj: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
         assert ishape == oshape
-        assert ishape == rj.shape
         super().__init__(socket, ishape, oshape)
-        self.rj = rj
-        
+        self.rj = None
+    
+    def setup(self, r_other: torch.Tensor) -> None:
+        assert self.ishape == r_other.shape
+        self.rj = r_other
+    
 class ShortCutServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor,
-                 m_other:torch.Tensor) -> None:
+                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
         assert isinstance(layer, ShortCut)
         assert ishape == oshape
-        assert ishape == m_other.shape
         super().__init__(socket, ishape, oshape, layer, m_last)
         self.set_m_any()
+        self.mj = None
+    
+    def setup(self, m_other):
+        assert self.ishape == m_other.shape
         self.mj = m_other
-        
+    
     def offline(self, rj) -> None:
         ri = recv_torch(self.socket)
         ci = self.reconstruct_mul_data(ri)
