@@ -18,22 +18,27 @@ def make_client_model(socket, model, inshape):
     layers = []
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
-            layers.append(layer.conv.Conv2DClient(socket, shapes[i], shapes[i+1], lyr))
+            layers.append(layer.conv.Conv2DClient(socket, shapes[i], shapes[i+1]))
         elif isinstance(lyr, nn.Linear):
-            layers.append(layer.fc.FcClient(socket, shapes[i], shapes[i+1], lyr))
+            if i == len(model) - 1:
+                layers.append(layer.last_fc.LastFcClient(socket, shapes[i], shapes[i+1]))
+            else:
+                layers.append(layer.fc.FcClient(socket, shapes[i], shapes[i+1]))
         elif isinstance(lyr, nn.ReLU):
-            layers.append(layer.relu.ReLUClient(socket, shapes[i], shapes[i+1], lyr))
+            layers.append(layer.relu.ReLUClient(socket, shapes[i], shapes[i+1]))
         elif isinstance(lyr, nn.MaxPool2d):
-            layers.append(layer.maxpool.MaxPoolClient(socket, shapes[i], shapes[i+1], lyr))
+            layers.append(layer.maxpool.MaxPoolClient(socket, shapes[i], shapes[i+1]))
+            layers[-1].setup(lyr)
         elif isinstance(lyr, nn.Flatten):
-            layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1], lyr))
+            layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1]))
         elif isinstance(lyr, ShortCut):
             offset = lyr.otherlayer # a negative integer
             rother = layers[offset].r
-            layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1], lyr))
-            layers[-1].setup(rother)
+            layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1]))
+            layers[-1].setup(offset, rother)
         elif isinstance(lyr, nn.Softmax):
-            layers.append(layer.softmax.SoftmaxClient(socket, shapes[i], shapes[i+1], lyr))
+            assert i == len(model) - 1
+            layers.append(layer.softmax.SoftmaxClient(socket, shapes[i], shapes[i+1]))
         else:
             raise Exception("Unknown layer type: " + str(lyr))
     return layers
@@ -48,7 +53,10 @@ def make_server_model(socket, model, inshape):
         if isinstance(lyr, nn.Conv2d):
             layers.append(layer.conv.Conv2DServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, nn.Linear):
-            layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+            if i == len(model) - 1:
+                layers.append(layer.last_fc.LastFcServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+            else:
+                layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, nn.ReLU):
             layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, nn.MaxPool2d):

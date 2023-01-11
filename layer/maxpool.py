@@ -6,9 +6,11 @@ import torch
 import torch.nn as nn
 
 class MaxPoolClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
-        assert isinstance(layer, nn.MaxPool2d)
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
         super().__init__(socket, ishape, oshape)
+        self.layer = None
+        
+    def setup(self, layer:torch.nn.MaxPool2d):
         self.layer = layer
         
     def online(self, xm) -> torch.Tensor:
@@ -19,8 +21,8 @@ class MaxPoolClient(LayerClient):
         return data
 
 class MaxPoolServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape:
-        tuple, layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
+                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
         assert isinstance(layer, nn.MaxPool2d)
         # kernel_size must be no greater than stride
         if isinstance(layer.kernel_size, int):

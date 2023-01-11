@@ -1,30 +1,20 @@
-from layer.base import LayerClient, LayerServer
-from comm.util import send_torch, recv_torch
+from layer.base import LocalLayerClient, LocalLayerServer
+# from comm.util import send_torch, recv_torch
 
 from socket import socket
 import torch
 import torch.nn as nn
 
-class ReLUClient(LayerClient):
+class ReLUClient(LocalLayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
         super().__init__(socket, ishape, oshape)
-        self.layer = torch.nn.ReLU()
-        
-    def offline(self) -> None:
-        return
+        self.layer = nn.ReLU()
     
     def online(self, xm) -> torch.Tensor:
         return self.layer(xm)
     
-class ReLUServer(LayerServer):
+class ReLUServer(LocalLayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
                  layer: torch.nn.Module, m_last: torch.Tensor) -> None:
         assert isinstance(layer, nn.ReLU)
         super().__init__(socket, ishape, oshape, layer, m_last)
-        self.m = m_last
-        
-    def offline(self) -> None:
-        return
-    
-    def online(self) -> None:
-        return

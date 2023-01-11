@@ -3,24 +3,29 @@ from comm.util import send_torch, recv_torch
 
 from socket import socket
 import torch
+import torch.nn as nn
 
-class OutputClient(LayerClient):
+class LastFcClient(LayerClient):
     def __init__(self, socket: socket, inshape: tuple, outshape: tuple) -> None:
         super().__init__(socket, inshape, outshape)
     
     
-class OutputServer(LayerServer):
+class LastFcServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
                  layer: torch.nn.Module, mlast: torch.Tensor) -> None:
+        assert isinstance(layer, nn.Linear)
         super().__init__(socket, ishape, oshape, layer, mlast)
+        self.m = None
     
     def offline(self) -> None:
-        data = recv_torch(self.socket)
-        data = self.reconstruct_mul_data(data)
+        data = recv_torch(self.socket) # r_i
+        data = self.layer(data) # W_i * r_i
+        data = self.reconstruct_mul_data(data) # W_i * r_i / m_{i-1}
         send_torch(self.socket, data)
     
     def online(self) -> None:
-        data = recv_torch(self.socket)
-        data = self.reconstruct_mul_data(data)
+        data = recv_torch(self.socket) # xmr_i = x_i * m_{i-1} - r_i
+        data = self.reconstruct_mul_data(data) # x_i - r_i / m_{i-1}
+        data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
         send_torch(self.socket, data)
     

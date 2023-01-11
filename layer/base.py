@@ -53,7 +53,7 @@ class LayerServer():
         self.layer = layer
         self.m = None
     
-    def setup(self, **kwargs):
+    def setup(self, **kwargs) -> None:
         return
     
     def offline(self) -> None:
@@ -62,13 +62,13 @@ class LayerServer():
     def online(self) -> None:
         raise NotImplementedError
 
-    def set_m_any(self):
+    def set_m_any(self) -> None:
         t = __MUL_SHARE_RANGE__*torch.rand(self.oshape)
         f = t < __POSITIVE_EPS__
         t[f] += __POSITIVE_EPS__
         self.m = t # [-5, -eps) U (eps, 5)
     
-    def set_m_positive(self):
+    def set_m_positive(self) -> None:
         t = __MUL_SHARE_RANGE__*torch.rand(self.oshape) + __POSITIVE_EPS__# avoid zero
         self.m = t # [eps, 10+eps)
     
@@ -89,4 +89,28 @@ class LayerServer():
         if mlast is None:
             mlast = self.mlast
         return share / mlast
+
+
+# local layer specialization
+class LocalLayerClient(LayerClient):
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
+        super().__init__(socket, ishape, oshape)
     
+    def offline(self) -> None:
+        return
+
+    def online(self, xm) -> torch.Tensor:
+        raise NotImplementedError
+
+class LocalLayerServer(LayerServer):
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
+                 layer: torch.nn.Module, mlast: torch.Tensor) -> None:
+        super().__init__(socket, ishape, oshape, layer, mlast)
+        self.m = mlast
+    
+    def offline(self) -> None:
+        return
+    
+    def online(self) -> None:
+        return
+

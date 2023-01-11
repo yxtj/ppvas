@@ -12,8 +12,9 @@ class ShortCutClient(LayerClient):
         super().__init__(socket, ishape, oshape)
         self.rj = None
     
-    def setup(self, r_other: torch.Tensor) -> None:
+    def setup(self, offset:int, r_other: torch.Tensor) -> None:
         assert self.ishape == r_other.shape
+        self.other_offset = offset
         self.rj = r_other
     
 class ShortCutServer(LayerServer):
@@ -22,6 +23,7 @@ class ShortCutServer(LayerServer):
         assert isinstance(layer, ShortCut)
         assert ishape == oshape
         super().__init__(socket, ishape, oshape, layer, m_last)
+        self.other_offset = layer.otherlayer
         self.set_m_any()
         self.mj = None
     

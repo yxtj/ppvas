@@ -5,5 +5,5 @@ from . import relu
 from . import maxpool
 from . import flatten
 from . import shortcut
-from . import output
+from . import last_fc
 from . import softmax
