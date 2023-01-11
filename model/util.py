@@ -5,6 +5,8 @@ from torch_extension.shortcut import ShortCut
 
 
 def compute_shape(model, inshape):
+    if len(inshape) == 3:
+        inshape = (1, *inshape)
     t = torch.zeros(inshape)
     shapes = [inshape]
     for i, lyr in enumerate(model):
