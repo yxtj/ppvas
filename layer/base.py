@@ -56,10 +56,10 @@ class LayerServer():
     def setup(self, **kwargs) -> None:
         return
     
-    def offline(self) -> None:
+    def offline(self) -> torch.Tensor:
         raise NotImplementedError
     
-    def online(self) -> None:
+    def online(self) -> torch.Tensor:
         raise NotImplementedError
 
     def set_m_any(self) -> None:

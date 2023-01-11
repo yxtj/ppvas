@@ -17,15 +17,17 @@ class LastFcServer(LayerServer):
         super().__init__(socket, ishape, oshape, layer, mlast)
         self.m = None
     
-    def offline(self) -> None:
-        data = recv_torch(self.socket) # r_i
-        data = self.layer(data) # W_i * r_i
-        data = self.reconstruct_mul_data(data) # W_i * r_i / m_{i-1}
+    def offline(self) -> torch.Tensor:
+        r_i = recv_torch(self.socket) # r_i
+        data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
+        data = self.layer(data) # W_i * r_i / m_{i-1}
         send_torch(self.socket, data)
+        return r_i
     
-    def online(self) -> None:
-        data = recv_torch(self.socket) # xmr_i = x_i * m_{i-1} - r_i
-        data = self.reconstruct_mul_data(data) # x_i - r_i / m_{i-1}
+    def online(self) -> torch.Tensor:
+        xmr_i = recv_torch(self.socket) # xmr_i = x_i * m_{i-1} - r_i
+        data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
         data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
         send_torch(self.socket, data)
+        return xmr_i
     

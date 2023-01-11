@@ -31,19 +31,21 @@ class ShortCutServer(LayerServer):
         assert self.ishape == m_other.shape
         self.mj = m_other
     
-    def offline(self, rj) -> None:
+    def offline(self, rj) -> torch.Tensor:
         ri = recv_torch(self.socket)
         ci = self.reconstruct_mul_data(ri)
         cj = self.reconstruct_mul_data(rj, self.mj)
         data = ci + cj
         data = self.construct_mul_share(data)
         send_torch(self.socket, data)
+        return ri
         
-    def online(self, xmr_j) -> None:
+    def online(self, xmr_j) -> torch.Tensor:
         cj = self.reconstruct_mul_data(xmr_j, self.mj)
         xmr_i = recv_torch(self.socket)
         ci = self.reconstruct_mul_data(xmr_i)
         data = ci + cj
         data = self.construct_mul_share(data)
         send_torch(self.socket, data)
+        return xmr_i
     

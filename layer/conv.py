@@ -18,17 +18,20 @@ class Conv2DServer(LayerServer):
         self.set_m_positive()
         # TODO: construct HE layer
         
-    def offline(self) -> None:
-        data = recv_torch(self.socket)
+    def offline(self) -> torch.Tensor:
+        r_i = recv_torch(self.socket)
         # TODO: use HE layer
-        data = self.layer(data)
-        data = self.construct_mul_share(data)
+        data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
+        data = self.layer(data) # W_i * r_i / m_{i-1}
+        data = self.construct_mul_share(data) # w_i * r_i / m_{i-1} .* m_{i}
         send_torch(self.socket, data)
+        return r_i
         
-    def online(self) -> None:
-        data = recv_torch(self.socket)
-        data = self.reconstruct_mul_data(data)
-        data = self.layer(data)
-        data = self.construct_mul_share(data)
+    def online(self) -> torch.Tensor:
+        xmr_i = recv_torch(self.socket) # xmr_i = x_i * m_{i-1} - r_i
+        data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
+        data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
+        data = self.construct_mul_share(data) # W_i * (x_i - r_i / m_{i-1}) .* m_{i}
         send_torch(self.socket, data)
+        return xmr_i
 

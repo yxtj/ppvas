@@ -16,17 +16,19 @@ class FcServer(LayerServer):
         super().__init__(socket, ishape, oshape, layer, m_last)
         self.set_m_positive()
         
-    def offline(self) -> None:
-        data = recv_torch(self.socket)
-        data = self.layer(data)
-        data = self.construct_mul_share(data)
+    def offline(self) -> torch.Tensor:
+        r_i = recv_torch(self.socket) # r_i
+        data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
+        data = self.layer(r_i) # W_i * r_i / m_{i-1}
+        data = self.construct_mul_share(data) # w_i * r_i / m_{i-1} .* m_{i}
         send_torch(self.socket, data)
+        return r_i
     
-    def online(self) -> None:
-        data = recv_torch(self.socket)
-        data = self.reconstruct_mul_data(data)
-        data = self.layer(data)
-        data = self.construct_mul_share(data)
+    def online(self) -> torch.Tensor:
+        xmr_i = recv_torch(self.socket) # xmr_i = x_i * m_{i-1} - r_i
+        data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
+        data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
+        data = self.construct_mul_share(data) # W_i * (x_i - r_i / m_{i-1}) .* m_{i}
         send_torch(self.socket, data)
-        
+        return xmr_i
                    
