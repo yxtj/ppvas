@@ -49,7 +49,7 @@ class LayerServer():
         self.ishape = ishape
         self.oshape = oshape
         self.mlast = mlast
-        assert mlast.shape == ishape
+        assert (isinstance(mlast, (int, float)) and mlast == 1) or mlast.shape == ishape
         self.layer = layer
         self.m = None
     
