@@ -26,13 +26,13 @@ def recv_numpy(s:socket.socket, buf_sz:int=4096) -> np.ndarray:
     type_str = data[12:12+len_type].decode()
     shape = struct.unpack('!'+'i'*len_shape, data[12+len_type:12+len_type+4*len_shape])
     buffer = []
-    if len(chunck) > header_len:
-            buffer.append(chunck[header_len:])
-            nbytes -= len(chunck) - header_len
+    if len(data) > header_len:
+            buffer.append(data[header_len:])
+            nbytes -= len(data) - header_len
     while nbytes > 0:
-        chunck = s.recv(buf_sz)
-        nbytes -= len(chunck)
-        buffer.append(chunck)
+        data = s.recv(buf_sz)
+        nbytes -= len(data)
+        buffer.append(data)
     buffer = b''.join(buffer)
     result = np.frombuffer(buffer, dtype=type_str).reshape(shape)
     return result
@@ -44,19 +44,20 @@ def send_torch(s:socket.socket, data:torch.Tensor):
     torch.save(data, buffer)
     n = buffer.tell()
     buffer.seek(0)
+    s.send(struct.pack('!i', n))
     s.sendall(buffer.read())
     
 def recv_torch(s:socket.socket, buf_sz:int=4096) -> torch.Tensor:
     data = s.recv(buf_sz)
     nbytes, = struct.unpack('!i', data[:4])
     buffer = []
-    if len(chunck) > 4:
-            buffer.append(chunck[4:])
-            nbytes -= len(chunck) - 4
+    if len(data) > 4:
+            buffer.append(data[4:])
+            nbytes -= len(data) - 4
     while nbytes > 0:
-        chunck = s.recv(buf_sz)
-        nbytes -= len(chunck)
-        buffer.append(chunck)
+        data = s.recv(buf_sz)
+        nbytes -= len(data)
+        buffer.append(data)
     buffer = b''.join(buffer)
     result = torch.load(io.BytesIO(buffer))
     return result
