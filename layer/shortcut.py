@@ -1,15 +1,15 @@
 from layer.base import LayerClient, LayerServer
-from comm.util import send_torch, recv_torch
 
 from socket import socket
 import torch
 # import torch.nn as nn
 from torch_extension.shortcut import ShortCut
+from Pyfhel import Pyfhel
 
 class ShortCutClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         assert ishape == oshape
-        super().__init__(socket, ishape, oshape)
+        super().__init__(socket, ishape, oshape, he)
         self.rj = None
     
     def setup(self, offset:int, r_other: torch.Tensor) -> None:
@@ -32,20 +32,20 @@ class ShortCutServer(LayerServer):
         self.mj = m_other
     
     def offline(self, rj) -> torch.Tensor:
-        ri = recv_torch(self.socket)
+        ri = self.recv_he()
         ci = self.reconstruct_mul_data(ri)
         cj = self.reconstruct_mul_data(rj, self.mj)
         data = ci + cj
         data = self.construct_mul_share(data)
-        send_torch(self.socket, data)
+        self.send_he(data)
         return ri
         
     def online(self, xmr_j) -> torch.Tensor:
         cj = self.reconstruct_mul_data(xmr_j, self.mj)
-        xmr_i = recv_torch(self.socket)
+        xmr_i = self.recv_plain()
         ci = self.reconstruct_mul_data(xmr_i)
         data = ci + cj
         data = self.construct_mul_share(data)
-        send_torch(self.socket, data)
+        self.send_plain(data)
         return xmr_i
     

@@ -1,35 +1,74 @@
+from collections import namedtuple
 from socket import socket
+import time
 import torch
+import numpy as np
+from Pyfhel import Pyfhel
 
-from comm.util import send_torch, recv_torch
+import comm.util
 
 __ADD_SHARE_RANGE__ = 10
 __MUL_SHARE_RANGE__ = 10
 __POSITIVE_EPS__ = 0.01
 
-class LayerClient():
-    def __init__(self, socket:socket, ishape:tuple, oshape:tuple) -> None:
+Stat = namedtuple('LayerStat', [
+    'time_offline', 'byte_offline_send', 'byte_offline_recv',
+    'time_online', 'byte_online_send', 'byte_online_recv',
+    'time_send', 'byte_send',
+    'time_recv', 'byte_recv',
+    ])
+
+class LayerCommon():
+    def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
         self.socket = socket
         self.ishape = ishape
         self.oshape = oshape
+        self.he = he
+        self.stat = Stat(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    
+    def send_plain(self, data:torch.Tensor) -> None:
+        self.stat.byte_send += comm.util.send_torch(self.socket, data)
+    
+    def recv_plain(self) -> torch.Tensor:
+        data, nbyte = comm.util.recv_torch(self.socket)
+        self.stat.byte_recv += nbyte
+        return data
+
+    def send_he(self, data:np.ndarray) -> None:
+        self.stat.byte_send += self.send_plain(data)
+        # self.stat.byte_send += comm.util.send_he_matrix(self.socket, data, self.he)
+    
+    def recv_he(self) -> np.ndarray:
+        return self.recv_plain()
+        data, he, nbytes = comm.util.recv_he_matrix(self.socket, self.he)
+        self.stat.byte_recv += nbytes
+        return data
+
+class LayerClient(LayerCommon):
+    def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
+        super().__init__(socket, ishape, oshape, he)
         self.r = None
         self.pre = None
+        self.stat = Stat()
     
     def setup(self, **kwargs):
         return
     
     def offline(self) -> None:
+        t = time.time()
         self.set_r()
-        # TODO: change to HE (encrypt and send, receive and decrypt)
-        send_torch(self.socket, self.r)
-        data = recv_torch(self.socket)
+        self.send_he(self.r)
+        data = self.recv_he()
         self.pre = data
+        self.stat.time_offline = time.time() - t
     
     def online(self, xm) -> torch.Tensor:
+        t = time.time()
         data = self.construct_add_share(xm)
-        send_torch(self.socket, data)
-        data = recv_torch(self.socket)
+        self.send_plain(data)
+        data = self.recv_plain()
         data = self.reconstruct_add_data(data)
+        self.stat.time_online = time.time() - t
         return data
     
     def set_r(self):
@@ -42,15 +81,13 @@ class LayerClient():
         return share + self.pre
     
     
-class LayerServer():
+class LayerServer(LayerCommon):
     def __init__(self, socket:socket, ishape:tuple, oshape:tuple,
                  layer:torch.nn.Module, mlast:torch.Tensor) -> None:
-        self.socket = socket
-        self.ishape = ishape
-        self.oshape = oshape
-        self.mlast = mlast
+        super().__init__(socket, ishape, oshape, Pyfhel())
         assert (isinstance(mlast, (int, float)) and mlast == 1) or mlast.shape == ishape
         self.layer = layer
+        self.mlast = mlast
         self.m = None
     
     def setup(self, **kwargs) -> None:
@@ -93,8 +130,8 @@ class LayerServer():
 
 # local layer specialization
 class LocalLayerClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
-        super().__init__(socket, ishape, oshape)
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
+        super().__init__(socket, ishape, oshape, he)
     
     def offline(self) -> None:
         return

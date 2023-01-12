@@ -1,21 +1,21 @@
 from layer.base import LayerClient, LayerServer
-from comm.util import send_torch, recv_torch
 
 from socket import socket
 import torch
 import torch.nn as nn
+from Pyfhel import Pyfhel
 
 class MaxPoolClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple) -> None:
-        super().__init__(socket, ishape, oshape)
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
+        super().__init__(socket, ishape, oshape, he)
         self.layer = None
         
     def setup(self, layer:torch.nn.MaxPool2d):
         self.layer = layer
         
     def online(self, xm) -> torch.Tensor:
-        send_torch(self.socket, xm)
-        data = recv_torch(self.socket)
+        self.send_he(xm)
+        data = self.recv_he()
         data = self.reconstruct_add_data(data)
         data = self.layer(data)
         return data
@@ -47,16 +47,16 @@ class MaxPoolServer(LayerServer):
         self.mp = torch.kron(self.m, block) # kronecker product
         
     def offline(self) -> torch.Tensor:
-        r_i = recv_torch(self.socket) # r_i
+        r_i = self.recv_he() # r_i
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
         data = self.construct_mul_share(data, self.mp) # r_i / m_{i-1} .* m^p_{i}
-        send_torch(self.socket, data)
+        self.send_he(data)
         return r_i
         
     def online(self) -> torch.Tensor:
-        xmr_i = recv_torch(self.socket) # xmr_i = x_i * m_{i-1} - r_i
+        xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
         data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
         data = self.construct_mul_share(data, self.mp) # (x_i - r_i / m_{i-1}) .* m^p_{i}
-        send_torch(self.socket, data)
+        self.send_plain(data)
         return xmr_i
     
