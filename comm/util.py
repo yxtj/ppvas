@@ -8,17 +8,27 @@ from Pyfhel import Pyfhel, PyCtxt
 def serialize_numpy_meta(data:np.ndarray) -> bytes:
     type_str = data.dtype.str.encode()
     shape = data.shape
-    r = struct.pack('!iii', data.nbytes, len(type_str), len(shape))+type_str+struct.pack('!'+'i'*len(shape), *shape)
+    r = struct.pack('!iii', data.nbytes, len(type_str), len(shape)) + \
+        type_str + struct.pack('!'+'i'*len(shape), *shape)
     return r
 
-def _recv_big_data_(s:socket.socket, n:int, left:bytes=None, buf_sz:int=4096) -> bytes:
+def deserialize_numpy_meta(data:bytes) -> tuple(int, int, str, tuple(int)):
+    nbytes, type_len, shape_len = struct.unpack('!iii', data[:12])
+    header_len = 12 + type_len + shape_len*4
+    type_str = data[12 : 12+type_len].decode()
+    shape = struct.unpack('!'+'i'*shape_len, data[12+type_len : header_len])
+    return header_len, nbytes, type_str, shape
+
+def _recv_big_data_(s:socket.socket, n:int, left:bytes=None, buf_sz:int=4096) -> tuple(bytes, bytes):
+    if len(left) >= n:
+        return left[:n], left[n:]
     buffer = [left] if left is not None else []
     while n > 0:
         t = s.recv(min(buf_sz, n))
         n -= len(t)
         buffer.append(t)
     data = b''.join(buffer)
-    return data
+    return data, b''
 
 # byte chunk
 
@@ -29,26 +39,21 @@ def send_chunk(s:socket.socket, data:bytes) -> int:
 def recv_chunk(s:socket.socket, buf_sz:int=4096) -> bytes:
     data = s.recv(buf_sz)
     n, = struct.unpack('!i', data[:4])
-    return _recv_big_data_(s, n, data[4:], buf_sz)
+    return _recv_big_data_(s, n, data[4:], buf_sz)[0]
 
 # numpy
     
 def send_numpy(s:socket.socket, data:np.ndarray) -> int:
-    type_str = data.dtype.str.encode()
-    shape = data.shape
-    s.sendall(struct.pack('!iii', data.nbytes, len(type_str), len(shape))+type_str+
-              struct.pack('!'+'i'*len(shape), *shape))
+    b_meta = serialize_numpy_meta(data)
+    s.sendall(b_meta)
     data = data.tobytes()
     s.sendall(data)
-    return 12 + len(type_str) + len(shape)*4 + len(data)
+    return len(b_meta) + len(data)
     
 def recv_numpy(s:socket.socket, buf_sz:int=4096) -> tuple(np.ndarray, int):
     data = s.recv(buf_sz)
-    nbytes, len_type, len_shape = struct.unpack('!iii', data[:12])
-    header_len = 12 + len_type + len_shape*4
-    type_str = data[12:12+len_type].decode()
-    shape = struct.unpack('!'+'i'*len_shape, data[12+len_type:12+len_type+4*len_shape])
-    buffer = _recv_big_data_(s, nbytes, data[header_len:])
+    header_len, nbytes, type_str, shape = deserialize_numpy_meta(data)
+    buffer = _recv_big_data_(s, nbytes, data[header_len:])[0]
     result = np.frombuffer(buffer, dtype=type_str).reshape(shape)
     return result, header_len + nbytes
 
@@ -66,7 +71,7 @@ def send_torch(s:socket.socket, data:torch.Tensor) -> int:
 def recv_torch(s:socket.socket, buf_sz:int=4096) -> tuple(torch.Tensor, int):
     data = s.recv(buf_sz)
     nbytes, = struct.unpack('!i', data[:4])
-    buffer = _recv_big_data_(s, nbytes, data[4:])
+    buffer = _recv_big_data_(s, nbytes, data[4:])[0]
     result = torch.load(io.BytesIO(buffer))
     return result, 4 + nbytes
 
@@ -92,3 +97,35 @@ def recv_ciphertext(s:socket.socket, he:Pyfhel, buf_sz:int=4096) -> tuple(PyCtxt
     data = recv_chunk(s, buf_sz)
     res = PyCtxt(pyfhel=he, bytestring=data)
     return res, len(data) + 4
+
+
+def send_he_matrix(s:socket.socket, data:np.ndarray, he:Pyfhel) -> int:
+    b_ctx = he.to_bytes_context()
+    meta = serialize_numpy_meta(data)
+    d = data.flatten()
+    header = struct.pack('!i', len(b_ctx)) + b_ctx + meta + struct.pack('!i', len(d[0].to_bytes()))
+    s.sendall(header)
+    n = 4 + len(b_ctx) + len(meta) + 4
+    for i in range(data.size):
+        n += s.sendall(d[i].to_bytes())
+    return n
+
+def recv_he_matrix(s:socket.socket, he:Pyfhel, buf_sz:int=4096) -> tuple(np.ndarray, int):
+    header_len = struct.unpack('!i', s.recv(4))[0]
+    data = s.recv(header_len)
+    recv_chunk(s, buf_sz)
+    ctx_len = struct.unpack('!i', data[:4])[0]
+    ctx = data[4:4+ctx_len]
+    meta_len, nbytes, type_str, shape = deserialize_numpy_meta(data[4+ctx_len:])
+    ct_len = struct.unpack('!i', data[4+ctx_len+meta_len:])[0]
+    
+    he.from_bytes_context(ctx)
+    buffer = []
+    size = np.prod(shape)
+    for i in range(size):
+        b = _recv_big_data_(s, ct_len)
+        ct = PyCtxt(pyfhel=he, bytestring=b)
+        buffer.append(ct)
+        left = None
+    result = np.array(buffer).reshape(shape)
+    return result, he, 4 + header_len + nbytes
