@@ -118,14 +118,14 @@ def recv_he_matrix(s:socket.socket, he:Pyfhel, buf_sz:int=4096) -> tuple(np.ndar
     ctx = data[4:4+ctx_len]
     meta_len, nbytes, type_str, shape = deserialize_numpy_meta(data[4+ctx_len:])
     ct_len = struct.unpack('!i', data[4+ctx_len+meta_len:])[0]
-    
+    # update HE context
     he.from_bytes_context(ctx)
-    buffer = []
+    # parse ciphertexts
+    res = np.empty(shape, dtype=object)
+    r = res.flatten()
     size = np.prod(shape)
     for i in range(size):
         b = _recv_big_data_(s, ct_len)
         ct = PyCtxt(pyfhel=he, bytestring=b)
-        buffer.append(ct)
-        left = None
-    result = np.array(buffer).reshape(shape)
-    return result, he, 4 + header_len + nbytes
+        r[i] = ct
+    return res, 4 + header_len + nbytes
