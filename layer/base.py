@@ -12,10 +12,8 @@ __MUL_SHARE_RANGE__ = 10
 __POSITIVE_EPS__ = 0.01
 
 Stat = namedtuple('LayerStat', [
-    'time_offline', 'byte_offline_send', 'byte_offline_recv',
-    'time_online', 'byte_online_send', 'byte_online_recv',
-    'time_send', 'byte_send',
-    'time_recv', 'byte_recv',
+    'time_offline', 'byte_offline_send', 'byte_offline_recv', #'time_offline_send', 'time_offline_recv',
+    'time_online', 'byte_online_send', 'byte_online_recv', #'time_online_send', 'time_online_recv',
     ])
 
 class LayerCommon():
@@ -27,21 +25,27 @@ class LayerCommon():
         self.stat = Stat(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     
     def send_plain(self, data:torch.Tensor) -> None:
-        self.stat.byte_send += comm.util.send_torch(self.socket, data)
+        self.stat.byte_online_send += comm.util.send_torch(self.socket, data)
     
     def recv_plain(self) -> torch.Tensor:
         data, nbyte = comm.util.recv_torch(self.socket)
-        self.stat.byte_recv += nbyte
+        self.stat.byte_online_recv += nbyte
         return data
 
     def send_he(self, data:np.ndarray) -> None:
-        self.stat.byte_send += self.send_plain(data)
-        # self.stat.byte_send += comm.util.send_he_matrix(self.socket, data, self.he)
+        # simulate with plain
+        self.stat.byte_offline_send += comm.util.send_torch(self.socket, data)
+        # actual send with HE
+        # self.stat.byte_offline_send += comm.util.send_he_matrix(self.socket, data, self.he)
     
     def recv_he(self) -> np.ndarray:
-        return self.recv_plain()
-        data, he, nbytes = comm.util.recv_he_matrix(self.socket, self.he)
-        self.stat.byte_recv += nbytes
+        # simulate with plain
+        data, nbyte = comm.util.recv_torch(self.socket)
+        self.stat.byte_offline_recv += nbyte
+        return data
+        # actual send with HE
+        data, nbytes = comm.util.recv_he_matrix(self.socket, self.he)
+        self.stat.byte_offline_recv += nbytes
         return data
 
 class LayerClient(LayerCommon):
@@ -49,7 +53,6 @@ class LayerClient(LayerCommon):
         super().__init__(socket, ishape, oshape, he)
         self.r = None
         self.pre = None
-        self.stat = Stat()
     
     def setup(self, **kwargs):
         return

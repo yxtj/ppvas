@@ -1,6 +1,7 @@
 from layer.base import LayerClient, LayerServer
 
 from socket import socket
+import time
 import torch
 # import torch.nn as nn
 from torch_extension.shortcut import ShortCut
@@ -32,20 +33,24 @@ class ShortCutServer(LayerServer):
         self.mj = m_other
     
     def offline(self, rj) -> torch.Tensor:
+        t = time.time()
         ri = self.recv_he()
         ci = self.reconstruct_mul_data(ri)
         cj = self.reconstruct_mul_data(rj, self.mj)
         data = ci + cj
         data = self.construct_mul_share(data)
         self.send_he(data)
+        self.stat.time_offline = time.time() - t
         return ri
         
     def online(self, xmr_j) -> torch.Tensor:
+        t = time.time()
         cj = self.reconstruct_mul_data(xmr_j, self.mj)
         xmr_i = self.recv_plain()
         ci = self.reconstruct_mul_data(xmr_i)
         data = ci + cj
         data = self.construct_mul_share(data)
         self.send_plain(data)
+        self.stat.time_online = time.time() - t
         return xmr_i
     

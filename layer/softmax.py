@@ -1,6 +1,7 @@
 from layer.base import LocalLayerClient, LocalLayerServer
 
 from socket import socket
+import time
 import torch
 import torch.nn as nn
 from Pyfhel import Pyfhel
@@ -11,7 +12,10 @@ class SoftmaxClient(LocalLayerClient):
         self.layer = nn.Softmax()
     
     def online(self, xm) -> torch.Tensor:
-        return self.layer(xm)
+        t = time.time()
+        data = self.layer(xm)
+        self.stat.time_online = time.time() - t
+        return data
     
 
 class SoftmaxServer(LocalLayerServer):

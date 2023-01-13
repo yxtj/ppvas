@@ -1,6 +1,7 @@
 from layer.base import LayerClient, LayerServer
 
 from socket import socket
+import time
 import torch
 import torch.nn as nn
 from Pyfhel import Pyfhel
@@ -14,10 +15,12 @@ class MaxPoolClient(LayerClient):
         self.layer = layer
         
     def online(self, xm) -> torch.Tensor:
+        t = time.time()
         self.send_he(xm)
         data = self.recv_he()
         data = self.reconstruct_add_data(data)
         data = self.layer(data)
+        self.stat.time_online = time.time() - t
         return data
 
 class MaxPoolServer(LayerServer):
@@ -36,6 +39,7 @@ class MaxPoolServer(LayerServer):
         assert layer.dilation == 1
         assert ishape[-2]*self.stride_shape[0] == oshape[-2] and ishape[-1]*self.stride_shape[1] == oshape[-1]
         super().__init__(socket, ishape, oshape, layer, m_last)
+        t = time.time()
         # set m
         self.set_m_positive()
         # set mp
@@ -45,18 +49,23 @@ class MaxPoolServer(LayerServer):
             stride_shape = layer.stride
         block = torch.ones(stride_shape)
         self.mp = torch.kron(self.m, block) # kronecker product
+        self.stat.time_offline = time.time() - t
         
     def offline(self) -> torch.Tensor:
+        t = time.time()
         r_i = self.recv_he() # r_i
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
         data = self.construct_mul_share(data, self.mp) # r_i / m_{i-1} .* m^p_{i}
         self.send_he(data)
+        self.stat.time_offline = time.time() - t
         return r_i
         
     def online(self) -> torch.Tensor:
+        t = time.time()
         xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
         data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
         data = self.construct_mul_share(data, self.mp) # (x_i - r_i / m_{i-1}) .* m^p_{i}
         self.send_plain(data)
+        self.stat.time_online = time.time() - t
         return xmr_i
     
