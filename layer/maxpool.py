@@ -37,24 +37,35 @@ class MaxPoolServer(LayerServer):
             raise ValueError("kernel_size must be int or tuple")
         assert layer.padding == 0
         assert layer.dilation == 1
-        assert ishape[-2]*self.stride_shape[0] == oshape[-2] and ishape[-1]*self.stride_shape[1] == oshape[-1]
+        
+        if isinstance(layer.stride, int):
+            stride_shape = (layer.stride, layer.stride)
+        else:
+            stride_shape = layer.stride
+        assert ishape[-2]//stride_shape[0] == oshape[-2] and ishape[-1]//stride_shape[1] == oshape[-1]
         super().__init__(socket, ishape, oshape, layer, m_last)
+        self.stride_shape = stride_shape
         t = time.time()
         # set m
         self.set_m_positive()
         # set mp
-        if isinstance(layer.stride, 1):
-            stride_shape = (layer.stride, layer.stride)
-        else:
-            stride_shape = layer.stride
         block = torch.ones(stride_shape)
         self.mp = torch.kron(self.m, block) # kronecker product
         self.stat.time_offline += time.time() - t
-        
+    
+    def cut_input(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.oshape[-2] * self.stride_shape[0]
+        w = self.oshape[-1] * self.stride_shape[1]
+        if (h, w) == x.shape[-2:]:
+            return x
+        else:
+            return x[..., :h, :w]
+    
     def offline(self) -> torch.Tensor:
         t = time.time()
         r_i = self.recv_he() # r_i
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
+        data = self.cut_input(data)
         data = self.construct_mul_share(data, self.mp) # r_i / m_{i-1} .* m^p_{i}
         self.send_he(data)
         self.stat.time_offline += time.time() - t
@@ -64,6 +75,7 @@ class MaxPoolServer(LayerServer):
         t = time.time()
         xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
         data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
+        data = self.cut_input(data)
         data = self.construct_mul_share(data, self.mp) # (x_i - r_i / m_{i-1}) .* m^p_{i}
         self.send_plain(data)
         self.stat.time_online += time.time() - t
