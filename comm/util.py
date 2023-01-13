@@ -22,7 +22,11 @@ def deserialize_numpy_meta(data:bytes) -> tuple[int, int, str, tuple[int]]:
 def _recv_big_data_(s:socket.socket, n:int, left:bytes=None, buf_sz:int=4096) -> tuple[bytes, bytes]:
     if left is not None and len(left) >= n:
         return left[:n], left[n:]
-    buffer = [left] if left is not None else []
+    if left is not None:
+        buffer = [left]
+        n -= len(left)
+    else:
+        buffer = []
     while n > 0:
         t = s.recv(min(buf_sz, n))
         n -= len(t)
