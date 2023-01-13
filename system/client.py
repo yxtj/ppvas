@@ -18,7 +18,8 @@ class Client():
         self.layers = util.make_client_model(socket, model, inshape, he)
         
     def offline(self):
-        for lyr in self.layers:
+        for i, lyr in enumerate(self.layers):
+            print('  offline {}: {} ...'.format(i, lyr.__class__.__name__))
             lyr.offline()
             
     def online(self, data: torch.Tensor) -> torch.Tensor:
