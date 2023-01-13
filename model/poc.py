@@ -17,7 +17,7 @@ Poc1Model = nn.Sequential(
 )
 
 # Model 2:
-# Shape: 1x32x32 -conv-> 5x30x30 -max-> 5x10x10 -conv-> 10x8x8 -max-> 10x3x3 -> 90 -> 10
+# Shape: 1x32x32 -conv-> 5x30x30 -max-> 5x10x10 -conv-> 10x8x8 -max-> 10x2x2 -> 40 -> 10
 
 Poc2Inshape = (1, 32, 32)
 Poc2Model = nn.Sequential(
@@ -28,7 +28,7 @@ Poc2Model = nn.Sequential(
     nn.ReLU(),
     nn.MaxPool2d(3, 3),
     nn.Flatten(),
-    nn.Linear(360, 10),
+    nn.Linear(40, 10),
 )
 
 # Model 3:
