@@ -25,7 +25,9 @@ class ShortCutServer(LayerServer):
         assert ishape == oshape
         super().__init__(socket, ishape, oshape, layer, m_last)
         self.other_offset = layer.otherlayer
+        t = time.time()
         self.set_m_any()
+        self.stat.time_offline += time.time() - t
         self.mj = None
     
     def setup(self, m_other):
@@ -40,7 +42,7 @@ class ShortCutServer(LayerServer):
         data = ci + cj
         data = self.construct_mul_share(data)
         self.send_he(data)
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
         return ri
         
     def online(self, xmr_j) -> torch.Tensor:
@@ -51,6 +53,6 @@ class ShortCutServer(LayerServer):
         data = ci + cj
         data = self.construct_mul_share(data)
         self.send_plain(data)
-        self.stat.time_online = time.time() - t
+        self.stat.time_online += time.time() - t
         return xmr_i
     

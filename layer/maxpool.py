@@ -20,7 +20,7 @@ class MaxPoolClient(LayerClient):
         data = self.recv_he()
         data = self.reconstruct_add_data(data)
         data = self.layer(data)
-        self.stat.time_online = time.time() - t
+        self.stat.time_online += time.time() - t
         return data
 
 class MaxPoolServer(LayerServer):
@@ -49,7 +49,7 @@ class MaxPoolServer(LayerServer):
             stride_shape = layer.stride
         block = torch.ones(stride_shape)
         self.mp = torch.kron(self.m, block) # kronecker product
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
         
     def offline(self) -> torch.Tensor:
         t = time.time()
@@ -57,7 +57,7 @@ class MaxPoolServer(LayerServer):
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
         data = self.construct_mul_share(data, self.mp) # r_i / m_{i-1} .* m^p_{i}
         self.send_he(data)
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
         return r_i
         
     def online(self) -> torch.Tensor:
@@ -66,6 +66,6 @@ class MaxPoolServer(LayerServer):
         data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
         data = self.construct_mul_share(data, self.mp) # (x_i - r_i / m_{i-1}) .* m^p_{i}
         self.send_plain(data)
-        self.stat.time_online = time.time() - t
+        self.stat.time_online += time.time() - t
         return xmr_i
     

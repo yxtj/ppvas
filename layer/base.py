@@ -1,4 +1,4 @@
-from collections import namedtuple
+from dataclasses import dataclass
 from socket import socket
 import time
 import torch
@@ -11,10 +11,19 @@ __ADD_SHARE_RANGE__ = 10
 __MUL_SHARE_RANGE__ = 10
 __POSITIVE_EPS__ = 0.01
 
-Stat = namedtuple('LayerStat', [
-    'time_offline', 'byte_offline_send', 'byte_offline_recv', #'time_offline_send', 'time_offline_recv',
-    'time_online', 'byte_online_send', 'byte_online_recv', #'time_online_send', 'time_online_recv',
-    ])
+@dataclass
+class Stat:
+    time_offline: float
+    byte_offline_send: float
+    byte_offline_recv: float
+    # time_offline_send: float
+    # time_offline_recv: float
+    time_online: float
+    byte_online_send: float
+    byte_online_recv: float
+    # time_online_send: float
+    # time_online_recv: float
+
 
 class LayerCommon():
     def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
@@ -22,7 +31,7 @@ class LayerCommon():
         self.ishape = ishape
         self.oshape = oshape
         self.he = he
-        self.stat = Stat(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.stat = Stat(0, 0, 0, 0, 0, 0)
     
     def send_plain(self, data:torch.Tensor) -> None:
         self.stat.byte_online_send += comm.util.send_torch(self.socket, data)
@@ -63,7 +72,7 @@ class LayerClient(LayerCommon):
         self.send_he(self.r)
         data = self.recv_he()
         self.pre = data
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
     
     def online(self, xm) -> torch.Tensor:
         t = time.time()
@@ -71,7 +80,7 @@ class LayerClient(LayerCommon):
         self.send_plain(data)
         data = self.recv_plain()
         data = self.reconstruct_add_data(data)
-        self.stat.time_online = time.time() - t
+        self.stat.time_online += time.time() - t
         return data
     
     def set_r(self):

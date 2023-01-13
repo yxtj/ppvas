@@ -24,7 +24,7 @@ class LastFcServer(LayerServer):
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
         data = self.layer(data) # W_i * r_i / m_{i-1}
         self.send_he(data)
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
         return r_i
     
     def online(self) -> torch.Tensor:
@@ -33,6 +33,6 @@ class LastFcServer(LayerServer):
         data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
         data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
         self.send_plain(data)
-        self.stat.time_online = time.time() - t
+        self.stat.time_online += time.time() - t
         return xmr_i
     

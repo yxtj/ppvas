@@ -18,7 +18,7 @@ class Conv2DServer(LayerServer):
         super().__init__(socket, ishape, oshape, layer, m_last)
         t = time.time()
         self.set_m_positive()
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
         # TODO: construct HE layer
         
     def offline(self) -> torch.Tensor:
@@ -28,7 +28,7 @@ class Conv2DServer(LayerServer):
         data = self.layer(data) # W_i * r_i / m_{i-1}
         data = self.construct_mul_share(data) # w_i * r_i / m_{i-1} .* m_{i}
         self.send_he(data)
-        self.stat.time_offline = time.time() - t
+        self.stat.time_offline += time.time() - t
         return r_i
         
     def online(self) -> torch.Tensor:
@@ -38,6 +38,6 @@ class Conv2DServer(LayerServer):
         data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
         data = self.construct_mul_share(data) # W_i * (x_i - r_i / m_{i-1}) .* m_{i}
         self.send_plain(data)
-        self.stat.time_online = time.time() - t
+        self.stat.time_online += time.time() - t
         return xmr_i
 
