@@ -1,9 +1,11 @@
 import sys
 import torch
 import socket
+from Pyfhel import Pyfhel
 
 from model import poc
 import system
+
 
 
 if __name__ == '__main__':
@@ -32,25 +34,30 @@ if __name__ == '__main__':
         print("Server is running on {}:{}".format(host, port))
         conn, addr = s.accept()
         print("Client connected from: {}".format(addr))
-        server = system.Server(conn, poc.Poc1Model, poc.ishape)
+        server = system.Server(conn, model, inshape)
         print("Server is ready")
         server.offline()
         print("Server offline finished")
         server.online()
         print("Server online finished")
     else:
+        he = Pyfhel()
+        he.contextGen(scheme='ckks', n=2**13, scale=2**30, qi_sizes=[30]*5)
         s = socket.create_connection((host, port))
         print("Client is connecting to {}:{}".format(host, port))
-        client = system.Client(s, poc.Poc1Model, poc.ishape)
+        client = system.Client(s, model, inshape, he)
         print("Client is ready")
         client.offline()
         print("Client offline finished")
-        inshape = (1, *poc.ishape)
+        inshape = (1, *inshape)
         data = torch.rand(inshape)
         res = client.online(data)
         print("Client online finished")
         print("System result: {}".format(res))
-        res2 = poc.Poc1Model(data)
+        res2 = model(data)
         print("Local result: {}".format(res2))
         diff = (res - res2).abs().sum()
         print("Difference: {}".format(diff))
+        print("Statistics: ")
+        for i, lyr in enumerate(client.layers):
+            print("  Layer {} {}: {}".format(i, lyr.__class__.__name__, lyr.stat))
