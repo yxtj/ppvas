@@ -13,8 +13,6 @@ class Server():
         self.inshape = inshape
         # layers
         self.layers, self.to_buffer = util.make_server_model(socket, model, inshape)
-        # data bufer
-        self.data = {}
         
     def offline(self):
         buffer = {}
