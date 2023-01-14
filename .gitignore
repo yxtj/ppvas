@@ -133,3 +133,5 @@ dmypy.json
 /reference/
 /log/
 /.vscode/
+/pypath.bat
+/pypath.sh
