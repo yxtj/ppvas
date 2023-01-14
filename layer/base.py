@@ -82,18 +82,25 @@ class LayerClient(LayerCommon):
         self.send_he(self.r)
         data = self.recv_he()
         self.pre = data
+        # print("r", self.r, self.r.requires_grad)
+        # print("pre", self.pre, self.pre.requires_grad)
         self.stat.time_offline += time.time() - t
     
     def online(self, xm) -> torch.Tensor:
         t = time.time()
+        # print("xm", xm, xm.requires_grad)
         data = self.construct_add_share(xm)
+        # print("xm-r", data, data.requires_grad)
         self.send_plain(data)
         data = self.recv_plain()
+        # print("w(x-r)", data, data.requires_grad)
         data = self.reconstruct_add_data(data)
+        # print("w(x)", data, data.requires_grad)
         self.stat.time_online += time.time() - t
         return data
     
     def set_r(self):
+        # self.r = torch.zeros(self.ishape)
         self.r = __ADD_SHARE_RANGE__*torch.rand(self.ishape) - __ADD_SHARE_RANGE__/2 # [-5, 5)
     
     def construct_add_share(self, data):
@@ -120,6 +127,13 @@ class LayerServer(LayerCommon):
     
     def online(self) -> torch.Tensor:
         raise NotImplementedError
+
+    def run_layer_offline(self, data:torch.Tensor) -> torch.Tensor:
+        bias = self.layer.bias
+        self.layer.bias = None
+        data = self.layer(data)
+        self.layer.bias = bias
+        return data
 
     def set_m_any(self) -> None:
         t = __MUL_SHARE_RANGE__*torch.rand(self.oshape)

@@ -23,7 +23,7 @@ class FcServer(LayerServer):
         t = time.time()
         r_i = self.recv_he() # r_i
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
-        data = self.layer(r_i) # W_i * r_i / m_{i-1}
+        data = self.run_layer_offline(r_i) # W_i * r_i / m_{i-1}
         data = self.construct_mul_share(data) # w_i * r_i / m_{i-1} .* m_{i}
         self.send_he(data)
         self.stat.time_offline += time.time() - t
