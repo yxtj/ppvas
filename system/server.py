@@ -19,7 +19,8 @@ class Server():
     def offline(self):
         buffer = {}
         for i, lyr in enumerate(self.layers):
-            print('  offline {}: {} ...'.format(i, lyr.__class__.__name__))
+            print('  offline {}: {}(inshape={}, outshape={}) ...'.format(
+                i, lyr.__class__.__name__, lyr.ishape, lyr.oshape))
             if i in self.to_buffer:
                 if isinstance(lyr, layer.shortcut.ShortCutServer):
                     t = lyr.offline(buffer[i + lyr.other_offset])
