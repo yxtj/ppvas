@@ -11,7 +11,7 @@ def compute_shape(model, inshape):
     shapes = [inshape]
     for i, lyr in enumerate(model):
         t = lyr(t)
-        shapes.append(t.shape)
+        shapes.append(tuple(t.shape))
     return shapes
 
     
@@ -30,6 +30,9 @@ def make_client_model(socket, model, inshape, he):
             layers.append(layer.relu.ReLUClient(socket, shapes[i], shapes[i+1], he))
         elif isinstance(lyr, nn.MaxPool2d):
             layers.append(layer.maxpool.MaxPoolClient(socket, shapes[i], shapes[i+1], he))
+            layers[-1].setup(lyr)
+        elif isinstance(lyr, nn.AvgPool2d):
+            layers.append(layer.avgpool.AvgPoolClient(socket, shapes[i], shapes[i+1], he))
             layers[-1].setup(lyr)
         elif isinstance(lyr, nn.Flatten):
             layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1], he))
@@ -63,6 +66,8 @@ def make_server_model(socket, model, inshape):
             layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, nn.MaxPool2d):
             layers.append(layer.maxpool.MaxPoolServer(socket, shapes[i], shapes[i+1], lyr, mlast))
+        elif isinstance(lyr, nn.AvgPool2d):
+            layers.append(layer.avgpool.AvgPoolServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, nn.Flatten):
             layers.append(layer.flatten.FlattenServer(socket, shapes[i], shapes[i+1], lyr, mlast))
         elif isinstance(lyr, ShortCut):
