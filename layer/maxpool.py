@@ -16,8 +16,8 @@ class MaxPoolClient(LayerClient):
         
     def online(self, xm) -> torch.Tensor:
         t = time.time()
-        self.send_he(xm)
-        data = self.recv_he()
+        self.send_plain(xm)
+        data = self.recv_plain()
         data = self.reconstruct_add_data(data)
         data = self.layer(data)
         self.stat.time_online += time.time() - t

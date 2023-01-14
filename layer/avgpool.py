@@ -14,13 +14,6 @@ class AvgPoolClient(LayerClient):
     def setup(self, layer:torch.nn.AvgPool2d):
         self.layer = layer
         
-    def online(self, xm) -> torch.Tensor:
-        t = time.time()
-        self.send_he(xm)
-        data = self.recv_he()
-        data = self.reconstruct_add_data(data)
-        self.stat.time_online += time.time() - t
-        return data
 
 class AvgPoolServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
@@ -37,7 +30,7 @@ class AvgPoolServer(LayerServer):
         r_i = self.recv_he() # r_i
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
         data = self.layer(data) # avg_pool( r_i / m_{i-1} )
-        data = self.construct_mul_share(data, self.mp) # avg_pool( r_i / m_{i-1} ) .* m_{i}
+        data = self.construct_mul_share(data) # avg_pool( r_i / m_{i-1} ) .* m_{i}
         self.send_he(data)
         self.stat.time_offline += time.time() - t
         return r_i
@@ -47,7 +40,7 @@ class AvgPoolServer(LayerServer):
         xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
         data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
         data = self.layer(data) # avg_pool( x_i - r_i / m_{i-1} )
-        data = self.construct_mul_share(data, self.mp) # avg_pool( x_i - r_i / m_{i-1} ) .* m^p_{i}
+        data = self.construct_mul_share(data) # avg_pool( x_i - r_i / m_{i-1} ) .* m_{i}
         self.send_plain(data)
         self.stat.time_online += time.time() - t
         return xmr_i
