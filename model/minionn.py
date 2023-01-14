@@ -8,12 +8,14 @@ model = nn.Sequential(
     nn.Conv2d(64, 64, 3, 1, 1),
     nn.ReLU(),
     nn.MaxPool2d(2, 2),
+    # nn.AvgPool2d(2, 2),
     
     nn.Conv2d(64, 64, 3, 1, 1),
     nn.ReLU(),
     nn.Conv2d(64, 64, 3, 1, 1),
     nn.ReLU(),
     nn.MaxPool2d(2, 2),
+    # nn.AvgPool2d(2, 2),
     
     nn.Conv2d(64, 64, 3, 1, 1),
     nn.ReLU(),
