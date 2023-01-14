@@ -28,9 +28,10 @@ def show_stat(layers, n):
         elif isinstance(lyr, (layer.maxpool.MaxPoolClient, layer.maxpool.MaxPoolServer,
                               layer.avgpool.AvgPoolClient, layer.avgpool.AvgPoolServer)):
             s_pool += lyr.stat
-        elif isinstance(lyr, (layer.conv.Conv2DClient, layer.conv.Conv2DServer,
+        elif isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
                               layer.fc.FcClient, layer.fc.FcServer,
-                              layer.last_fc.LastFcClient, layer.last_fc.LastFcServer)):
+                              layer.last_conv.LastConvClient, layer.last_conv.LastConvServer,
+                              layer.last_fc.LastFcClient, layer.last_fc.LastFcServer,)):
             s_linear += lyr.stat
     print()
     show_stat_one("Total", s_total, n)

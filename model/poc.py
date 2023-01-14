@@ -4,14 +4,31 @@ from torch_extension.shortcut import ShortCut
 
 map = {}
 
-# Model 0:
+# Model 0 linear:
 # Shape: 6 -> 2
 
-Poc0Inshape = (6,)
-Poc0Model = nn.Sequential(
+Poc0Inshape_l = (6,)
+Poc0Model_l = nn.Sequential(
     nn.Linear(6, 2),
 )
-map["0"] = (Poc0Inshape, Poc0Model)
+map["0-linear"] = (Poc0Inshape_l, Poc0Model_l)
+
+# Model 0 pool:
+# Shape: 1x6x6 -> 1x2x2 -> 4 -> 2
+
+Poc0Inshape_p = (1, 6, 6)
+Poc0Model_m = nn.Sequential(
+    nn.MaxPool2d(3, 3),
+    nn.Flatten(),
+    nn.Linear(4, 2),
+)
+Poc0Model_a = nn.Sequential(
+    nn.AvgPool2d(3, 3),
+    nn.Flatten(),
+    nn.Linear(4, 2),
+)
+map["0-max"] = (Poc0Inshape_p, Poc0Model_m)
+map["0-avg"] = (Poc0Inshape_p, Poc0Model_a)
 
 # Model 1:
 # Shape: 1x10x10 -> 5x8x8  -> 10x6x6 -> 360 -> 10

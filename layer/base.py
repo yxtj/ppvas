@@ -82,20 +82,20 @@ class LayerClient(LayerCommon):
         self.send_he(self.r)
         data = self.recv_he()
         self.pre = data
-        # print("r", self.r, self.r.requires_grad)
-        # print("pre", self.pre, self.pre.requires_grad)
+        # print("r", self.r)
+        # print("pre", self.pre)
         self.stat.time_offline += time.time() - t
     
     def online(self, xm) -> torch.Tensor:
         t = time.time()
-        # print("xm", xm, xm.requires_grad)
+        # print("xm", xm)
         data = self.construct_add_share(xm)
-        # print("xm-r", data, data.requires_grad)
+        # print("xm-r", data)
         self.send_plain(data)
         data = self.recv_plain()
-        # print("w(x-r)", data, data.requires_grad)
+        # print("w(x-r)", data)
         data = self.reconstruct_add_data(data)
-        # print("w(x)", data, data.requires_grad)
+        # print("w(x)", data)
         self.stat.time_online += time.time() - t
         return data
     

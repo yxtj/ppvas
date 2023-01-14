@@ -6,5 +6,6 @@ from . import maxpool
 from . import avgpool
 from . import flatten
 from . import shortcut
+from . import last_conv
 from . import last_fc
 from . import softmax
