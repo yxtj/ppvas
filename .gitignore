@@ -131,4 +131,5 @@ dmypy.json
 
 /backup/
 /reference/
+/log/
 /.vscode/
