@@ -8,25 +8,26 @@ from model import poc
 import system
 
 
-
 if __name__ == '__main__':
     argv = sys.argv
     if len(argv) < 3:
-        print('Usage: python model server|client [host=localhost] [port=8100]')
+        print('Usage: python model server|client [seed=0] [host=localhost] [port=8100]')
         sys.exit(1)
     model_name = argv[1]
     mode = argv[2]
     assert mode in ['server', 'client']
-    host = argv[3] if len(argv) > 3 else 'localhost'
-    port = int(argv[4]) if len(argv) > 4 else 8100
+    seed = int(argv[3]) if len(argv) > 3 else 0
+    host = argv[4] if len(argv) > 4 else 'localhost'
+    port = int(argv[5]) if len(argv) > 5 else 8100
+    
+    torch.manual_seed(seed)
     
     # set model and inshape
-    if model_name == 'poc1':
-        model, inshape = poc.Poc1Model, poc.Poc1Inshape
-    elif model_name == 'poc2':
-        model, inshape = poc.Poc2Model, poc.Poc2Inshape
-    elif model_name == 'poc3':
-        model, inshape = poc.Poc3Model, poc.Poc3Inshape
+    if model_name in poc.map:
+        inshape, model = poc.map[model_name]
+        model.eval()
+        for p in model.parameters():
+            p.data.uniform_(-1, 1)
     else:
         raise ValueError("Unknown model name: {}".format(model_name))
     
