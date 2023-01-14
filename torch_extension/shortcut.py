@@ -9,6 +9,8 @@ class ShortCut(nn.Module):
         super().__init__()
         self.otherlayer = otherlayer
         
-    def forward(self, x, y):
+    def forward(self, x, y=None):
+        if y is None:
+            return x
         return x+y
     
