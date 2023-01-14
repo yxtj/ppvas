@@ -77,6 +77,7 @@ def recv_torch(s:socket.socket, buf_sz:int=4096) -> tuple[torch.Tensor, int]:
     nbytes, = struct.unpack('!i', data[:4])
     buffer = _recv_big_data_(s, nbytes, data[4:])[0]
     result = torch.load(io.BytesIO(buffer))
+    result.requires_grad = False
     return result, 4 + nbytes
 
 # shape tuple
