@@ -11,14 +11,16 @@ class FcClient(LayerClient):
         super().__init__(socket, ishape, oshape, he)
 
 class FcServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.Linear)
-        super().__init__(socket, ishape, oshape, layer, m_last)
+        super().__init__(socket, ishape, oshape, layer)
+    
+    def setup(self, m_last: torch.Tensor) -> None:
+        super().setup(m_last)
         t = time.time()
         self.set_m_positive()
         self.stat.time_offline += time.time() - t
-        
+    
     def offline(self) -> torch.Tensor:
         t = time.time()
         r_i = self.recv_he() # r_i

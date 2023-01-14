@@ -12,30 +12,41 @@ class Server():
         self.model = model
         self.inshape = inshape
         # layers
-        self.layers, self.to_buffer = util.make_server_model(socket, model, inshape)
-        
+        self.layers, self.shortcuts = util.make_server_model(socket, model, inshape)
+        self.to_buffer = [v for k,v in self.shortcuts.items()]
+    
     def offline(self):
         buffer = {}
+        mlast = 1
         for i, lyr in enumerate(self.layers):
-            print('  offline {}: {}(inshape={}, outshape={}) ...'.format(
-                i, lyr.__class__.__name__, lyr.ishape, lyr.oshape))
-            if i in self.to_buffer:
-                if isinstance(lyr, layer.shortcut.ShortCutServer):
-                    t = lyr.offline(buffer[i + lyr.other_offset])
-                else:
-                    t = lyr.offline()
-                buffer[i] = t
+            name = lyr.__class__.__name__
+            print('  offline {}: {}(inshape={}, outshape={}) ...'.format(i, name, lyr.ishape, lyr.oshape))
+            # setup
+            if i in self.shortcuts:
+                # assert isinstance(lyr, layer.shortcut.ShortCutServer)
+                idx = self.shortcuts[i]
+                m_other = self.layers[idx].m
+                lyr.setup(mlast, m_other)
             else:
-                lyr.offline()
+                lyr.setup(mlast)
+            mlast = lyr.m
+            # offline
+            if i in self.shortcuts:
+                idx = self.shortcuts[i]
+                t = lyr.offline(buffer[idx])
+            else:
+                t = lyr.offline()
+            if i in self.to_buffer:
+                buffer[i] = t
             
     def online(self):
         buffer = {}
         for i, lyr in enumerate(self.layers):
+            if i in self.shortcuts:
+                idx = self.shortcuts[i]
+                t = lyr.online(buffer[idx])
+            else:
+                t = lyr.online()
             if i in self.to_buffer:
-                if isinstance(lyr, layer.shortcut.ShortCutServer):
-                    t = lyr.online(buffer[i + lyr.other_offset])
-                else:
-                    t = lyr.online()
                 buffer[i] = t
-            lyr.online()
         

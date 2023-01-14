@@ -49,14 +49,14 @@ map["1"] = (Poc1Inshape, Poc1Model)
 # Shape: 1x10x10 -> 5x8x8 -> 5x2x2 -> 20 -> 10
 
 Poc2Inshape = (1, 10, 10)
-Poc2Model = nn.Sequential(
+Poc2Model_max = nn.Sequential(
     nn.Conv2d(1, 5, 3),
     nn.ReLU(),
     nn.MaxPool2d(3, 3),
     nn.Flatten(),
     nn.Linear(20, 10),
 )
-map["2"] = (Poc2Inshape, Poc2Model)
+map["2"] = (Poc2Inshape, Poc2Model_max)
 
 Poc2Model_avg = nn.Sequential(
     nn.Conv2d(1, 5, 3),
@@ -81,17 +81,35 @@ Poc3Model = nn.Sequential(
     nn.Flatten(),
     nn.Linear(40, 10),
 )
-map["3"] = (Poc2Inshape, Poc2Model)
+map["3"] = (Poc3Inshape, Poc3Model)
 
 # Model 4:
 # Shape: 10 -relu-> 10 -shortcut(-1,-3)-> 10 -> 5
 
-Poc4Inshape = (10)
+Poc4Inshape = (10,)
 Poc4Model = nn.Sequential(
     nn.Linear(10, 10),
     nn.ReLU(),
     nn.Linear(10, 10),
     ShortCut(-3),
+    nn.ReLU(),
     nn.Linear(10, 5),
 )
-map["4"] = (Poc3Inshape, Poc3Model)
+map["4"] = (Poc4Inshape, Poc4Model)
+
+# Model 5:
+# Shape: 1x10x10 -conv-> 5x8x8 -conv-> 5x8x8 -shortcut(-3)-> 5x8x8 -> 320 -> 10
+
+Poc5Inshape = (1, 10, 10)
+Poc5Model = nn.Sequential(
+    nn.Conv2d(1, 5, 3),
+    nn.ReLU(),
+    nn.Conv2d(5, 5, 3, 1, 1),
+    nn.ReLU(),
+    nn.Conv2d(5, 5, 3, 1, 1),
+    ShortCut(-3),
+    nn.ReLU(),
+    nn.Flatten(),
+    nn.Linear(5 * 10 * 10, 10),
+)
+map["5"] = (Poc5Inshape, Poc5Model)

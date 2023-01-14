@@ -13,26 +13,25 @@ class ShortCutClient(LayerClient):
         super().__init__(socket, ishape, oshape, he)
         self.rj = None
     
-    def setup(self, offset:int, r_other: torch.Tensor) -> None:
+    def setup(self, r_other: torch.Tensor) -> None:
         assert self.ishape == r_other.shape
-        self.other_offset = offset
         self.rj = r_other
     
 class ShortCutServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, ShortCut)
         assert ishape == oshape
-        super().__init__(socket, ishape, oshape, layer, m_last)
+        super().__init__(socket, ishape, oshape, layer)
         self.other_offset = layer.otherlayer
-        t = time.time()
-        self.set_m_any()
-        self.stat.time_offline += time.time() - t
         self.mj = None
     
-    def setup(self, m_other):
+    def setup(self, m_last: torch.Tensor, m_other: torch.Tensor) -> None:
+        super().setup(m_last)
         assert self.ishape == m_other.shape
+        t = time.time()
+        self.set_m_any()
         self.mj = m_other
+        self.stat.time_offline += time.time() - t
     
     def offline(self, rj) -> torch.Tensor:
         t = time.time()

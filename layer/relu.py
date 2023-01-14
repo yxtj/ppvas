@@ -18,7 +18,6 @@ class ReLUClient(LocalLayerClient):
         return data
     
 class ReLUServer(LocalLayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.ReLU)
-        super().__init__(socket, ishape, oshape, layer, m_last)
+        super().__init__(socket, ishape, oshape, layer)

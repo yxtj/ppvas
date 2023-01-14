@@ -12,11 +12,9 @@ class LastFcClient(LayerClient):
     
     
 class LastFcServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, mlast: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.Linear)
-        super().__init__(socket, ishape, oshape, layer, mlast)
-        self.m = None
+        super().__init__(socket, ishape, oshape, layer)
     
     def offline(self) -> torch.Tensor:
         t = time.time()

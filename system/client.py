@@ -15,11 +15,16 @@ class Client():
         # he
         self.he = he
         # layers
-        self.layers = util.make_client_model(socket, model, inshape, he)
+        self.layers, self.shortcuts = util.make_client_model(socket, model, inshape, he)
+        self.to_buffer = [v for k,v in self.shortcuts.items()]
         
     def offline(self):
         for i, lyr in enumerate(self.layers):
             print('  offline {}: {} ...'.format(i, lyr.__class__.__name__))
+            if i in self.shortcuts:
+                idx = self.shortcuts[i]
+                r_other = self.layers[idx].r
+                lyr.setup(r_other)
             lyr.offline()
             
     def online(self, data: torch.Tensor) -> torch.Tensor:

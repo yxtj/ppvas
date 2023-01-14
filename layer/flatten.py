@@ -19,10 +19,12 @@ class FlattenClient(LocalLayerClient):
 
 
 class FlattenServer(LocalLayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.Flatten)
-        super().__init__(socket, ishape, oshape, layer, m_last)
-        self.m = self.layer(m_last)
+        super().__init__(socket, ishape, oshape, layer)
+        
+    def setup(self, mlast: torch.Tensor) -> None:
+        super().setup(mlast)
+        self.m = self.layer(mlast)
         
     

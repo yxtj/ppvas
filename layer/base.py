@@ -111,16 +111,16 @@ class LayerClient(LayerCommon):
     
     
 class LayerServer(LayerCommon):
-    def __init__(self, socket:socket, ishape:tuple, oshape:tuple,
-                 layer:torch.nn.Module, mlast:torch.Tensor) -> None:
+    def __init__(self, socket:socket, ishape:tuple, oshape:tuple, layer:torch.nn.Module) -> None:
         super().__init__(socket, ishape, oshape, Pyfhel())
-        assert (isinstance(mlast, (int, float)) and mlast == 1) or mlast.shape == ishape
         self.layer = layer
-        self.mlast = mlast
+        self.mlast = None
         self.m = None
     
-    def setup(self, **kwargs) -> None:
-        return
+    def setup(self, mlast:torch.Tensor) -> None:
+        assert (isinstance(mlast, (int, float)) and mlast == 1) or mlast.shape == self.ishape
+        self.mlast = mlast
+        # set m in child class
     
     def offline(self) -> torch.Tensor:
         raise NotImplementedError
@@ -165,6 +165,7 @@ class LayerServer(LayerCommon):
 
 
 # local layer specialization
+
 class LocalLayerClient(LayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         super().__init__(socket, ishape, oshape, he)
@@ -176,9 +177,11 @@ class LocalLayerClient(LayerClient):
         raise NotImplementedError
 
 class LocalLayerServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, mlast: torch.Tensor) -> None:
-        super().__init__(socket, ishape, oshape, layer, mlast)
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
+        super().__init__(socket, ishape, oshape, layer)
+    
+    def setup(self, mlast: torch.Tensor) -> None:
+        super().setup(mlast)
         self.m = mlast
     
     def offline(self) -> None:

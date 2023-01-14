@@ -19,8 +19,7 @@ class SoftmaxClient(LocalLayerClient):
     
 
 class SoftmaxServer(LocalLayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, mlast: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.Softmax)
-        super().__init__(socket, ishape, oshape, layer, mlast)
+        super().__init__(socket, ishape, oshape, layer)
         

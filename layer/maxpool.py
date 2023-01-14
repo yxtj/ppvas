@@ -7,11 +7,9 @@ import torch.nn as nn
 from Pyfhel import Pyfhel
 
 class MaxPoolClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel,
+                 layer:torch.nn.MaxPool2d) -> None:
         super().__init__(socket, ishape, oshape, he)
-        self.layer = None
-        
-    def setup(self, layer:torch.nn.MaxPool2d):
         self.layer = layer
         
     def online(self, xm) -> torch.Tensor:
@@ -30,8 +28,7 @@ class MaxPoolClient(LayerClient):
         return data
 
 class MaxPoolServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.MaxPool2d)
         # kernel_size must be no greater than stride
         if isinstance(layer.kernel_size, int):
@@ -49,19 +46,23 @@ class MaxPoolServer(LayerServer):
         else:
             stride_shape = layer.stride
         assert ishape[-2]//stride_shape[0] == oshape[-2] and ishape[-1]//stride_shape[1] == oshape[-1]
-        super().__init__(socket, ishape, oshape, layer, m_last)
+        
+        super().__init__(socket, ishape, oshape, layer)
         self.stride_shape = stride_shape
+    
+    def setup(self, mlast: torch.Tensor) -> None:
+        super().setup(mlast)
         t = time.time()
         # set m
         self.set_m_positive()
         # self.m = torch.ones(oshape)
         # print("m", self.m)
         # set mp
-        block = torch.ones(stride_shape)
+        block = torch.ones(self.stride_shape)
         self.mp = torch.kron(self.m, block) # kronecker product
         # print("mp", self.mp)
         self.stat.time_offline += time.time() - t
-    
+        
     def cut_input(self, x: torch.Tensor) -> torch.Tensor:
         h = self.oshape[-2] * self.stride_shape[0]
         w = self.oshape[-1] * self.stride_shape[1]

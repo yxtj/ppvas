@@ -7,20 +7,19 @@ import torch.nn as nn
 from Pyfhel import Pyfhel
 
 class AvgPoolClient(LayerClient):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel,
+                 layer:torch.nn.AvgPool2d) -> None:
         super().__init__(socket, ishape, oshape, he)
-        self.layer = None
-        
-    def setup(self, layer:torch.nn.AvgPool2d):
         self.layer = layer
         
 
 class AvgPoolServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.AvgPool2d)
-        super().__init__(socket, ishape, oshape, layer, m_last)
-        # set m
+        super().__init__(socket, ishape, oshape, layer)
+    
+    def setup(self, mlast:torch.Tensor) -> None:
+        super().setup(mlast)
         t = time.time()
         self.set_m_any()
         self.stat.time_offline += time.time() - t

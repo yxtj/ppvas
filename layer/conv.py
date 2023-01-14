@@ -12,15 +12,17 @@ class ConvClient(LayerClient):
 
     
 class ConvServer(LayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple,
-                 layer: torch.nn.Module, m_last: torch.Tensor) -> None:
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.Conv2d)
-        super().__init__(socket, ishape, oshape, layer, m_last)
+        super().__init__(socket, ishape, oshape, layer)
+        # TODO: construct HE layer
+    
+    def setup(self, mlast:torch.Tensor) -> None:
+        super().setup(mlast)
         t = time.time()
         self.set_m_positive()
         self.stat.time_offline += time.time() - t
-        # TODO: construct HE layer
-        
+    
     def offline(self) -> torch.Tensor:
         t = time.time()
         r_i = self.recv_he()
