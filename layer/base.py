@@ -79,10 +79,10 @@ class LayerClient(LayerCommon):
     def offline(self) -> None:
         t = time.time()
         self.set_r()
+        # print("r", self.r)
         self.send_he(self.r)
         data = self.recv_he()
         self.pre = data
-        # print("r", self.r)
         # print("pre", self.pre)
         self.stat.time_offline += time.time() - t
     
@@ -93,15 +93,16 @@ class LayerClient(LayerCommon):
         # print("xm-r", data)
         self.send_plain(data)
         data = self.recv_plain()
-        # print("w(x-r)", data)
+        # print("w(x-r)m", data)
         data = self.reconstruct_add_data(data)
-        # print("w(x)", data)
+        # print("wxm", data)
         self.stat.time_online += time.time() - t
         return data
     
     def set_r(self):
-        # self.r = torch.zeros(self.ishape)
         self.r = __ADD_SHARE_RANGE__*torch.rand(self.ishape) - __ADD_SHARE_RANGE__/2 # [-5, 5)
+        # self.r = torch.zeros(self.ishape)
+        # self.r = torch.zeros(self.ishape) + np.random.randint(1, 6)*0.1
     
     def construct_add_share(self, data):
         return data - self.r
@@ -118,7 +119,10 @@ class LayerServer(LayerCommon):
         self.m = None
     
     def setup(self, mlast:torch.Tensor) -> None:
-        assert (isinstance(mlast, (int, float)) and mlast == 1) or mlast.shape == self.ishape
+        if isinstance(mlast, (int, float)):
+            mlast = torch.zeros(self.ishape) + mlast
+        else:
+            assert mlast.shape == self.ishape
         self.mlast = mlast
         # set m in child class
     
@@ -140,10 +144,12 @@ class LayerServer(LayerCommon):
         f = t < __POSITIVE_EPS__
         t[f] += __POSITIVE_EPS__
         self.m = t # [-5, -eps) U (eps, 5)
+        # self.m = torch.ones(self.oshape)
     
     def set_m_positive(self) -> None:
-        t = __MUL_SHARE_RANGE__*torch.rand(self.oshape) + __POSITIVE_EPS__# avoid zero
+        t = __MUL_SHARE_RANGE__*torch.rand(self.oshape) + __POSITIVE_EPS__ # avoid zero
         self.m = t # [eps, 10+eps)
+        # self.m = torch.ones(self.oshape)
     
     def construct_mul_share(self, data, m = None):
         '''

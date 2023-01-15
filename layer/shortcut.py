@@ -27,30 +27,33 @@ class ShortCutServer(LayerServer):
     
     def setup(self, m_last: torch.Tensor, m_other: torch.Tensor) -> None:
         super().setup(m_last)
-        assert self.ishape == m_other.shape
         t = time.time()
+        assert self.ishape == m_other.shape
         self.set_m_any()
+        self.m = torch.ones(self.oshape)
         self.mj = m_other
         self.stat.time_offline += time.time() - t
+        # print("shortcut setup: mi={}, mj={}, m={}".format(self.mlast, self.mj, self.m))
     
     def offline(self, rj) -> torch.Tensor:
         t = time.time()
-        ri = self.recv_he()
-        ci = self.reconstruct_mul_data(ri)
-        cj = self.reconstruct_mul_data(rj, self.mj)
+        ri = self.recv_he() # r_i
+        # print("r_i={}, r_j={}".format(ri, rj))
+        ci = self.reconstruct_mul_data(ri) # r_i / m_{i-1}
+        cj = self.reconstruct_mul_data(rj, self.mj) # r_j / m_{j-1}
         data = ci + cj
-        data = self.construct_mul_share(data)
+        data = self.construct_mul_share(data) # (r_i / m_{i-1} + r_j / m_{j-1}) * m_i
         self.send_he(data)
         self.stat.time_offline += time.time() - t
         return ri
         
     def online(self, xmr_j) -> torch.Tensor:
         t = time.time()
-        cj = self.reconstruct_mul_data(xmr_j, self.mj)
-        xmr_i = self.recv_plain()
-        ci = self.reconstruct_mul_data(xmr_i)
+        xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
+        ci = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
+        cj = self.reconstruct_mul_data(xmr_j, self.mj) # x_j - r_j / m_{j-1}
         data = ci + cj
-        data = self.construct_mul_share(data)
+        data = self.construct_mul_share(data) # (x_i - r_i / m_{i-1} + x_j - r_j / m_{j-1}) * m_i
         self.send_plain(data)
         self.stat.time_online += time.time() - t
         return xmr_i
