@@ -28,6 +28,9 @@ if __name__ == '__main__':
         model.eval()
         for p in model.parameters():
             p.data.uniform_(-1, 1)
+        # for i, lyr in enumerate(model.modules()):
+        #     for p in lyr.parameters():
+        #         p.data.fill_(i + 1)
     else:
         raise ValueError("Unknown model name: {}".format(model_name))
     
@@ -52,6 +55,7 @@ if __name__ == '__main__':
     else:
         he = Pyfhel()
         he.contextGen(scheme='ckks', n=2**13, scale=2**30, qi_sizes=[30]*5)
+        he.keyGen()
         s = socket.create_connection((host, port))
         print("Client is connecting to {}:{}".format(host, port))
         t0 = time.time()
@@ -62,6 +66,7 @@ if __name__ == '__main__':
         print("Client offline finished")
         inshape = (1, *inshape)
         data = torch.rand(inshape)
+        # data = torch.arange(1, 1 + torch.prod(torch.tensor(inshape)).item(), dtype=torch.float).view(inshape)
         with torch.no_grad():
             res = client.online(data)
         t2 = time.time()

@@ -1,6 +1,6 @@
 # import torch
 import torch.nn as nn
-from torch_extension.shortcut import ShortCut
+import torch_extension as te
 
 map = {}
 
@@ -29,6 +29,18 @@ Poc0Model_a = nn.Sequential(
 )
 map["0-max"] = (Poc0Inshape_p, Poc0Model_m)
 map["0-avg"] = (Poc0Inshape_p, Poc0Model_a)
+
+# Model 0 shortcut:
+# Shape: 2 -> 2
+
+Poc0Inshape_s = (2,)
+Poc0Model_s = te.SequentialBuffer(
+# nn.Sequential(
+    nn.Linear(2, 2),
+    nn.Linear(2, 2),
+    te.ShortCut(-2)
+)
+map["0-sc"] = (Poc0Inshape_s, Poc0Model_s)
 
 # Model 1:
 # Shape: 1x10x10 -> 5x8x8  -> 10x6x6 -> 360 -> 10
@@ -87,11 +99,11 @@ map["3"] = (Poc3Inshape, Poc3Model)
 # Shape: 10 -relu-> 10 -shortcut(-1,-3)-> 10 -> 5
 
 Poc4Inshape = (10,)
-Poc4Model = nn.Sequential(
+Poc4Model = te.SequentialBuffer(
     nn.Linear(10, 10),
     nn.ReLU(),
     nn.Linear(10, 10),
-    ShortCut(-3),
+    te.ShortCut(-2),
     nn.ReLU(),
     nn.Linear(10, 5),
 )
@@ -101,15 +113,15 @@ map["4"] = (Poc4Inshape, Poc4Model)
 # Shape: 1x10x10 -conv-> 5x8x8 -conv-> 5x8x8 -shortcut(-3)-> 5x8x8 -> 320 -> 10
 
 Poc5Inshape = (1, 10, 10)
-Poc5Model = nn.Sequential(
+Poc5Model = te.SequentialBuffer(
     nn.Conv2d(1, 5, 3),
     nn.ReLU(),
     nn.Conv2d(5, 5, 3, 1, 1),
     nn.ReLU(),
     nn.Conv2d(5, 5, 3, 1, 1),
-    ShortCut(-3),
+    te.ShortCut(-2),
     nn.ReLU(),
     nn.Flatten(),
-    nn.Linear(5 * 10 * 10, 10),
+    nn.Linear(320, 10),
 )
 map["5"] = (Poc5Inshape, Poc5Model)
