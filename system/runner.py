@@ -30,8 +30,8 @@ def show_stat(layers, n):
             s_pool += lyr.stat
         elif isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
                               layer.fc.FcClient, layer.fc.FcServer,
-                              layer.last_conv.LastConvClient, layer.last_conv.LastConvServer,
-                              layer.last_fc.LastFcClient, layer.last_fc.LastFcServer,)):
+                              layer.conv_last.LastConvClient, layer.conv_last.LastConvServer,
+                              layer.fc_last.LastFcClient, layer.fc_last.LastFcServer,)):
             s_linear += lyr.stat
     print()
     show_stat_one("Total", s_total, n)
