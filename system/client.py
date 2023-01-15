@@ -21,10 +21,12 @@ class Client():
     def offline(self):
         for i, lyr in enumerate(self.layers):
             print('  offline {}: {} ...'.format(i, lyr.__class__.__name__))
+            # setup
             if i in self.shortcuts:
                 idx = self.shortcuts[i]
                 r_other = self.layers[idx].r
                 lyr.setup(r_other)
+            # offline
             lyr.offline()
             
     def online(self, data: torch.Tensor) -> torch.Tensor:

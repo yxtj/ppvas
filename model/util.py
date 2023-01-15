@@ -18,7 +18,7 @@ def compute_shape(model, inshape):
 def make_client_model(socket, model, inshape, he):
     shapes = compute_shape(model, inshape)
     layers = []
-    shortcuts = {}
+    scl = {} # shortcut layers
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
             if i == len(model) - 1:
@@ -40,19 +40,26 @@ def make_client_model(socket, model, inshape, he):
             layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1], he))
         elif isinstance(lyr, ShortCut):
             layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1], he))
-            shortcuts[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
+            scl[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
         elif isinstance(lyr, nn.Softmax):
             assert i == len(model) - 1
             layers.append(layer.softmax.SoftmaxClient(socket, shapes[i], shapes[i+1], he))
         else:
             raise Exception("Unknown layer type: " + str(lyr))
+    # set shortcuts inputs
+    shortcuts = {} # {shortcut layer idx: input layer idx}
+    for idx, oidx in scl.items():
+        oidx += 1 # move to the outputo of the layer
+        if isinstance(layers[oidx], layer.base.LocalLayerClient):
+            raise Exception("Shortcut input should not be a local layer.")
+        shortcuts[idx] = oidx
     return layers, shortcuts
 
 
 def make_server_model(socket, model, inshape):
     shapes = compute_shape(model, inshape)
     layers = []
-    shortcuts = {}
+    scl = {}
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
             if i == len(model) - 1:
@@ -74,9 +81,16 @@ def make_server_model(socket, model, inshape):
             layers.append(layer.flatten.FlattenServer(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, ShortCut):
             layers.append(layer.shortcut.ShortCutServer(socket, shapes[i], shapes[i+1], lyr))
-            shortcuts[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
+            scl[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
         elif isinstance(lyr, nn.Softmax):
             layers.append(layer.softmax.SoftmaxServer(socket, shapes[i], shapes[i+1], lyr))
         else:
             raise Exception("Unknown layer type: " + str(lyr))
+    # set shortcuts inputs
+    shortcuts = {} # {shortcut layer idx: input layer idx}
+    for idx, oidx in scl.items():
+        oidx += 1 # move to the outputo of the layer
+        if isinstance(layers[oidx], layer.base.LocalLayerServer):
+            raise Exception("Shortcut input should not be a local layer.")
+        shortcuts[idx] = oidx
     return layers, shortcuts

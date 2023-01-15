@@ -25,17 +25,19 @@ class Server():
             if i in self.shortcuts:
                 # assert isinstance(lyr, layer.shortcut.ShortCutServer)
                 idx = self.shortcuts[i]
-                m_other = self.layers[idx].m
+                m_other = self.layers[idx].mlast
                 lyr.setup(mlast, m_other)
             else:
                 lyr.setup(mlast)
             mlast = lyr.m
+            # print("  m :", mlast)
             # offline
             if i in self.shortcuts:
                 idx = self.shortcuts[i]
                 t = lyr.offline(buffer[idx])
             else:
                 t = lyr.offline()
+            # buffer
             if i in self.to_buffer:
                 buffer[i] = t
             
