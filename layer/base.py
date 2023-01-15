@@ -93,7 +93,7 @@ class LayerClient(LayerCommon):
         # print("xm-r", data)
         self.send_plain(data)
         data = self.recv_plain()
-        # print("w(x-r)m", data)
+        # print("w(x-r/m)m", data)
         data = self.reconstruct_add_data(data)
         # print("wxm", data)
         self.stat.time_online += time.time() - t

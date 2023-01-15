@@ -22,12 +22,12 @@ def make_client_model(socket, model, inshape, he):
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
             if i == len(model) - 1:
-                layers.append(layer.last_conv.LastConvClient(socket, shapes[i], shapes[i+1], he))
+                layers.append(layer.conv_last.LastConvClient(socket, shapes[i], shapes[i+1], he))
             else:
                 layers.append(layer.conv.ConvClient(socket, shapes[i], shapes[i+1], he))
         elif isinstance(lyr, nn.Linear):
             if i == len(model) - 1:
-                layers.append(layer.last_fc.LastFcClient(socket, shapes[i], shapes[i+1], he))
+                layers.append(layer.fc_last.LastFcClient(socket, shapes[i], shapes[i+1], he))
             else:
                 layers.append(layer.fc.FcClient(socket, shapes[i], shapes[i+1], he))
         elif isinstance(lyr, nn.ReLU):
@@ -63,12 +63,12 @@ def make_server_model(socket, model, inshape):
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
             if i == len(model) - 1:
-                layers.append(layer.last_conv.LastConvServer(socket, shapes[i], shapes[i+1], lyr))
+                layers.append(layer.conv_last.LastConvServer(socket, shapes[i], shapes[i+1], lyr))
             else:
                 layers.append(layer.conv.ConvServer(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, nn.Linear):
             if i == len(model) - 1:
-                layers.append(layer.last_fc.LastFcServer(socket, shapes[i], shapes[i+1], lyr))
+                layers.append(layer.fc_last.LastFcServer(socket, shapes[i], shapes[i+1], lyr))
             else:
                 layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, nn.ReLU):
