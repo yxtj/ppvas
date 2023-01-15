@@ -28,7 +28,7 @@ class ConvServer(LayerServer):
         r_i = self.recv_he()
         data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
         data = self.run_layer_offline(data) # W_i * r_i / m_{i-1}
-        data = self.construct_mul_share(data) # w_i * r_i / m_{i-1} .* m_{i}
+        data = self.construct_mul_share(data) # W_i * r_i / m_{i-1} .* m_{i}
         self.send_he(data)
         self.stat.time_offline += time.time() - t
         return r_i
