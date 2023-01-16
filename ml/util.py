@@ -109,7 +109,7 @@ def train(model, dataset, batch_size: int=32, epochs: int=10, shuffle: bool=True
             if device != 'cpu':
                 data = data.to(device)
                 target = target.to(device)
-            loss = trainbatch(model, data, target, optimizer, loss_fn, device)
+            loss = trainbatch(model, data, target, optimizer, loss_fn)
             # print statistics
             total += len(target)
             running_loss += loss * len(target)
@@ -166,7 +166,7 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
             if device != 'cpu':
                 data = data.to(device)
                 target = target.to(device)
-            n, c = testbatch(model, data, target, device)
+            n, c = testbatch(model, data, target)
             total += n
             correct += c
             if total > n:
@@ -204,7 +204,6 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
         print('Epoch {}/{}'.format(epoch+1, epochs))
         # train
         running_loss = 0.0
-        total = 0
         t1 = time.time()
         for data, target in trainloader:
             if device != 'cpu':
@@ -231,7 +230,7 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
             accuracy = correct / total
             t2 = time.time()
             print('  Accuracy: {:.2f}% ({}/{}) Time: {:.2f}s'.format(
-                accuracy, correct, total, t2 - t1))
+                100 * accuracy, correct, total, t2 - t1))
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
                 if dump_dir == '' or dump_dir == '.':
@@ -240,4 +239,5 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
                     filename = '{}/{}{}.pt'.format(dump_dir, dump_prefix, epoch+1)
                 print('  Dumping model to {}'.format(filename))
                 save_model_state(model, filename)
-    print('Finished Training. Time: {:.2f}s'.format(time.time()-t0))
+    print('Finished Training. Time: {:.2f}s Best accuracy: {:.2f}% at file {}'.format(
+        time.time()-t0, 100 * best_accuracy, filename))
