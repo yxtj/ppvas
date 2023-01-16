@@ -188,7 +188,7 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
             dump_interval: int, dump_dir: str='', dump_prefix: str='',
             epoch_start = 0, accuracy_threshold = 0.0,
             device: str = 'cpu'):
-    filename = '?'
+    filename = 'NO FILE'
     if device != 'cpu':
         assert torch.cuda.is_available(), 'CUDA is not available'
     model.to(device)
@@ -202,6 +202,7 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
         testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, pin_memory=True)
     # train, dump and test
     best_accuracy = accuracy_threshold
+    best_loss = float('inf')
     t0 = time.time()
     for epoch in range(epochs):
         print('Epoch {}/{}'.format(epoch+1, epochs))
@@ -214,6 +215,8 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
             loss = trainbatch(model, data, target, optimizer, loss_fn)
             running_loss += loss * len(target)
         running_loss /= len(trainset)
+        if best_loss == float('inf'):
+            best_loss = running_loss
         t2 = time.time()
         eta = (t2 - t0) / (epoch + 1) * (epochs - epoch - 1)
         print('  Epoch {}: Loss: {:.8g} Time: {:.2f}s ETA: {:.2f}s'.format(
@@ -234,13 +237,14 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
             t2 = time.time()
             print('  Accuracy: {:.2f}% ({}/{}) Time: {:.2f}s'.format(
                 100 * accuracy, correct, total, t2 - t1))
-            if accuracy > best_accuracy:
+            if accuracy > best_accuracy or (accuracy == best_accuracy and running_loss < best_loss):
                 best_accuracy = accuracy
+                best_loss = running_loss
                 if dump_dir == '' or dump_dir == '.':
                     filename = '{}{}.pt'.format(dump_prefix, epoch_start+epoch+1)
                 else:
                     filename = '{}/{}{}.pt'.format(dump_dir, dump_prefix, epoch_start+epoch+1)
                 print('  Dumping model to {}'.format(filename))
                 save_model_state(model, filename)
-    print('Finished Training. Time: {:.2f}s Best accuracy: {:.2f}% at file {}'.format(
-        time.time()-t0, 100 * best_accuracy, filename))
+    print('Finished Training. Time: {:.2f}s Best accuracy: {:.2f}%, loss: {:.2f} at file {}'.format(
+        time.time()-t0, 100 * best_accuracy, best_loss, filename))
