@@ -116,7 +116,7 @@ def train(model, dataset, batch_size: int=32, epochs: int=10, shuffle: bool=True
                 print('  Progress {:.1f}% ({}/{}). Loss: {:.6g}% Time: {:.2f}s ETA: {:.2f}s'.format(
                     total / n, total, n, running_loss, time.time() - t2, eta))
         t = time.time() - t1
-        eta = t / (epoch + 1) * (epochs - epoch - 1)
+        eta = t * (epochs - epoch - 1)
         print('  Epoch {}: Loss: {:.6g} Time: {:.2f}s ETA: {:.2f}s'.format(epoch, running_loss, t, eta))
     print('Finished Training. Time: {:.2f}s'.format(time.time()-t0))
 
@@ -153,14 +153,16 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
             # get prediction
             _, predicted = torch.max(output.data, 1)
             # count
-            total += target.size(0)
+            c = target.size(0)
+            total += c
             correct += (predicted == target).sum().item()
             if total >= n:
                 break
-            if time.time() - t1 >= show_interval:
-                t = time.time() - t1
-                t1 = time.time()
-                eta = t / total * (n - total)
+            t2 = time.time()
+            t = t2 - t1
+            if t >= show_interval:
+                t1 = t2
+                eta = t / c * (n - total)
                 print('  Progress {:.1f}% ({}/{}). Accuracy: {:.2f}% Time: {:.2f}s ETA: {:.2f}s'.format(
                     total / n, total, n, 100 * correct / total, t, eta))
     print('Accuracy: {:.2f}% ({}/{}) Time: {:.2f}s'.format(
