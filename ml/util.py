@@ -185,7 +185,8 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
 
 def process(model, trainset, testset, batch_size: int, epochs: int,
             optimizer: torch.optim.Optimizer, loss_fn: nn.Module,
-            dump_interval: int, dump_dir: str='', dump_prefix: str='', epoch_start = 0,
+            dump_interval: int, dump_dir: str='', dump_prefix: str='',
+            epoch_start = 0, accuracy_threshold = 0.0,
             device: str = 'cpu'):
     if device != 'cpu':
         assert torch.cuda.is_available(), 'CUDA is not available'
@@ -199,7 +200,7 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, pin_memory=True)
         testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, pin_memory=True)
     # train, dump and test
-    best_accuracy = 0.0
+    best_accuracy = accuracy_threshold
     t0 = time.time()
     for epoch in range(epochs):
         print('Epoch {}/{}'.format(epoch+1, epochs))

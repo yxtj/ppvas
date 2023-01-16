@@ -18,17 +18,22 @@ if __name__ == '__main__':
     lr = float(argv[5]) if len(argv) > 5 else 0.001
     device = argv[6] if len(argv) > 6 else 'cpu'
     
+    trainset, testset = util.load_data('cifar10', data_dir, True, True)
+    
+    model = minionn.build()
+    model = util.add_softmax(model)
     file, epn = util.find_latest_model(chkpt_dir, 'minionn_')
     if file is None:
         print("No pretrained model found")
+        acc = 0.0
     else:
         print("Loading model from {}".format(file))
-    model = minionn.build(file)
-    model = util.add_softmax(model)
+        util.load_model_state(model, file)
+        acc = util.test(model, testset, batch_size, device=device)
+        print("  Accuracy of loaded model: {:.2f}%".format(100*acc))
     
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     
-    trainset, testset = util.load_data('cifar10', data_dir, True, True)
     util.process(model, trainset, testset, batch_size, epochs, optimizer, loss_fn,
-                 dump_interval, chkpt_dir, 'minionn_', epn, device)
+                 dump_interval, chkpt_dir, 'minionn_', epn, acc, device)
