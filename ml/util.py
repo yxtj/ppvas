@@ -38,7 +38,7 @@ def find_latest_model(folder: str, prefix: str) -> tuple[str, int]:
     import os
     files = os.listdir(folder)
     files = [f for f in files if os.path.isfile(folder+"/"+f) and f.startswith(prefix) and f.endswith('.pt')]
-    latest = -1
+    latest = 0
     for f in files:
         try:
             t = int(f[len(prefix):-3])
@@ -48,7 +48,7 @@ def find_latest_model(folder: str, prefix: str) -> tuple[str, int]:
             pass
     if latest > 0:
         return "{}/{}{}.pt".format(folder, prefix, latest), latest
-    return None, None
+    return None, 0
 
 def save_model_state(model, path: str):
     torch.save(model.state_dict(), path)
