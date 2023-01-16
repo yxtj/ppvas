@@ -34,18 +34,21 @@ def add_softmax(model):
         model.add_module(str(len(model)), nn.Softmax(dim=1))
     return model
 
-def find_latest_model(folder: str, prefix: str):
+def find_latest_model(folder: str, prefix: str) -> tuple[str, int]:
     import os
     files = os.listdir(folder)
-    files = [f for f in files if os.path.isfile(f) and f.startswith(prefix) and f.endswith('.pt')]
+    files = [f for f in files if os.path.isfile(folder+"/"+f) and f.startswith(prefix) and f.endswith('.pt')]
     latest = -1
     for f in files:
-        t = int(f[len(prefix):-3])
-        if t > latest:
-            latest = t
+        try:
+            t = int(f[len(prefix):-3])
+            if t > latest:
+                latest = t
+        except:
+            pass
     if latest > 0:
-        return "{}/{}{}.pt".format(folder, prefix, latest)
-    return None
+        return "{}/{}{}.pt".format(folder, prefix, latest), latest
+    return None, None
 
 def save_model_state(model, path: str):
     torch.save(model.state_dict(), path)
@@ -55,9 +58,9 @@ def load_model_state(model, path: str):
     return model
 
 
-def train(model, dataset, batch_size: int=32, epochs: int=10, n: int=None, shuffle: bool=True,
+def train(model, dataset, batch_size: int=32, epochs: int=10, shuffle: bool=True,
           optimizer: torch.optim.Optimizer = None, loss_fn: nn.Module = None,
-          show_interval: float = 10, device: str = 'cpu'):
+          *, n: int=None, show_interval: float = 60, device: str = 'cpu'):
     if device != 'cpu':
         assert torch.cuda.is_available(), 'CUDA is not available'
     model.to(device)
@@ -118,7 +121,7 @@ def train(model, dataset, batch_size: int=32, epochs: int=10, n: int=None, shuff
     print('Finished Training. Time: {:.2f}s'.format(time.time()-t0))
 
 
-def test(model, dataset, batch_size: int = 32, n: int = None, show_interval: float = 10, device: str = 'cpu'):
+def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: float = 60, device: str = 'cpu'):
     if device != 'cpu':
         assert torch.cuda.is_available(), 'CUDA is not available'
     model.to(device)
