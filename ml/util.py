@@ -166,8 +166,8 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
             if device != 'cpu':
                 data = data.to(device)
                 target = target.to(device)
-            n, c = testbatch(model, data, target)
-            total += n
+            m, c = testbatch(model, data, target)
+            total += m
             correct += c
             if total > n:
                 break
