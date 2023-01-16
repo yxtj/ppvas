@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import sys
+import re
 
 import model.resnet as resnet
 import ml.util as util
@@ -18,12 +19,17 @@ if __name__ == '__main__':
     dump_interval = int(argv[4]) if len(argv) > 4 else 10
     lr = float(argv[5]) if len(argv) > 5 else 0.001
     device = argv[6] if len(argv) > 6 else 'cpu'
-    model_version = int(argv[7]) if len(argv) > 7 else 1
-    assert model_version in [1, 2, 3, 4]
+    model_version = argv[7] if len(argv) > 7 else "4"
+    m = re.match(r'(\d)([d]?)', model_version)
+    if m is None:
+        print("Invalid model version: {}".format(model_version))
+        sys.exit(1)
+    version = int(m.group(1))
+    residual = m.group(2) != 'd'
     
     prefix= 'resnet-' + str(model_version) + '_'
     
-    model = resnet.resnet32(model_version)
+    model = resnet.resnet32(version, residual)
     file, epn = util.find_latest_model(chkpt_dir, prefix)
     if file is None:
         print("No pretrained model found")

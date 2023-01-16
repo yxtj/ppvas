@@ -39,7 +39,7 @@ def build_block(layer_size, in_channels, out_channels, stride):
         layers.extend(build_identity_block(out_channels))
     return layers
 
-def build_resnet(num_blocks, num_class=100, version=1):
+def build_resnet(num_blocks, num_class=100, version=1, residual=True):
     # layer 0: 3x32x32 -> 16x32x32
     layers = [ conv3x3(3, 16), nn.ReLU() ]
     # layer 1: 16x32x32 -> 16x32x32
@@ -49,38 +49,40 @@ def build_resnet(num_blocks, num_class=100, version=1):
     # layer 3: 32x16x16 -> 64x8x8
     layers.extend(build_block(num_blocks[2], 32, 64, 2))
     # pooling and fc
-    if version == 1:
+    if version == 1: # cifar10
         layers.extend([
             nn.AvgPool2d(8),
             nn.Flatten(),
             nn.Linear(64, num_class),
         ])
-    elif version == 2:
+    elif version == 2: # cifar10
         layers.extend([
             nn.Conv2d(64, 64, 8, 8, bias=False),
             nn.Flatten(),
             nn.Linear(64, num_class),
         ])
-    elif version == 3:
+    elif version == 3: # cifar100
         layers.extend([
             nn.Flatten(),
             nn.Linear(4096, num_class),
         ])
-    elif version == 4:
+    elif version == 4: # cifar100
         layers.extend([
             nn.AvgPool2d(2),
             nn.Flatten(),
             nn.Linear(1024, num_class),
         ])
+    if not residual:
+        layers = [ lyr in lyr for lyr in layers if not isinstance(lyr, te.ShortCut) ]
     layers.append(nn.Softmax())
     return te.SequentialBuffer(*layers)
 
 
-def resnet20(version=1):
-    return build_resnet([3, 3, 3], 100, version)
+def resnet20(version=4, residual=True):
+    return build_resnet([3, 3, 3], 100, version, residual)
 
-def resnet32(version=1):
-    return build_resnet([5, 5, 5], 100, version)
+def resnet32(version=4, residual=True):
+    return build_resnet([5, 5, 5], 100, version, residual)
 
-def resnet44(version=1):
-    return build_resnet([7, 7, 7], 100, version)
+def resnet44(version=4, residual=True):
+    return build_resnet([7, 7, 7], 100, version, residual)
