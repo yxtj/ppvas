@@ -188,6 +188,7 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
             dump_interval: int, dump_dir: str='', dump_prefix: str='',
             epoch_start = 0, accuracy_threshold = 0.0,
             device: str = 'cpu'):
+    filename = '?'
     if device != 'cpu':
         assert torch.cuda.is_available(), 'CUDA is not available'
     model.to(device)
