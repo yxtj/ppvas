@@ -185,7 +185,8 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
 
 def process(model, trainset, testset, batch_size: int, epochs: int,
             optimizer: torch.optim.Optimizer, loss_fn: nn.Module,
-            dump_interval: int, dump_dir: str='', dump_prefix: str='', device: str = 'cpu'):
+            dump_interval: int, dump_dir: str='', dump_prefix: str='', epoch_start = 0,
+            device: str = 'cpu'):
     if device != 'cpu':
         assert torch.cuda.is_available(), 'CUDA is not available'
     model.to(device)
@@ -234,9 +235,9 @@ def process(model, trainset, testset, batch_size: int, epochs: int,
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
                 if dump_dir == '' or dump_dir == '.':
-                    filename = '{}{}.pt'.format(dump_prefix, epoch+1)
+                    filename = '{}{}.pt'.format(dump_prefix, epoch_start+epoch+1)
                 else:
-                    filename = '{}/{}{}.pt'.format(dump_dir, dump_prefix, epoch+1)
+                    filename = '{}/{}{}.pt'.format(dump_dir, dump_prefix, epoch_start+epoch+1)
                 print('  Dumping model to {}'.format(filename))
                 save_model_state(model, filename)
     print('Finished Training. Time: {:.2f}s Best accuracy: {:.2f}% at file {}'.format(

@@ -42,4 +42,4 @@ if __name__ == '__main__':
     
     trainset, testset = util.load_data('cifar100', data_dir, True, True)
     util.process(model, trainset, testset, batch_size, epochs, optimizer, loss_fn,
-                 dump_interval, chkpt_dir, prefix, device)
+                 dump_interval, chkpt_dir, prefix, epn, device)

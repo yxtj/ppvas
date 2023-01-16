@@ -31,4 +31,4 @@ if __name__ == '__main__':
     
     trainset, testset = util.load_data('cifar10', data_dir, True, True)
     util.process(model, trainset, testset, batch_size, epochs, optimizer, loss_fn,
-                 dump_interval, chkpt_dir, 'minionn_', device)
+                 dump_interval, chkpt_dir, 'minionn_', epn, device)
