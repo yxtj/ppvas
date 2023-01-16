@@ -4,6 +4,8 @@ import torchvision
 import torchvision.transforms as transforms
 import time
 
+# data load
+
 def load_data(name: str, folder: str, train: bool = True, test: bool = False):
     if name.lower() == 'cifar10':
         dsc = torchvision.datasets.CIFAR10
@@ -28,6 +30,7 @@ def load_data(name: str, folder: str, train: bool = True, test: bool = False):
     dataset_test = dsc(root=folder, train=False, download=True, transform=tsfm) if test else None
     return dataset_train, dataset_test
 
+# model save and load
 
 def add_softmax(model):
     if not isinstance(model[-1], nn.Softmax):
@@ -57,6 +60,18 @@ def load_model_state(model, path: str):
     model.load_state_dict(torch.load(path))
     return model
 
+# train and test
+
+def trainbatch(model, data, target, optimizer, loss_fn):
+    # forward
+    output = model(data)
+    # loss
+    loss = loss_fn(output, target)
+    # backward
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    return loss.item()
 
 def train(model, dataset, batch_size: int=32, epochs: int=10, shuffle: bool=True,
           optimizer: torch.optim.Optimizer = None, loss_fn: nn.Module = None,
@@ -90,36 +105,39 @@ def train(model, dataset, batch_size: int=32, epochs: int=10, shuffle: bool=True
         t1 = time.time()
         t2 = time.time()
         for batch in dataloader:
-            # get data
             data, target = batch
             if device != 'cpu':
                 data = data.to(device)
                 target = target.to(device)
-            # forward
-            output = model(data)
-            # loss
-            loss = loss_fn(output, target)
-            # backward
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            loss = trainbatch(model, data, target, optimizer, loss_fn, device)
             # print statistics
             total += len(target)
-            running_loss += loss.item()
-            if total >= n:
+            running_loss += loss * len(target)
+            if total > n:
                 break
             t3 = time.time()
             t = t3 - t2
             if t >= show_interval:
                 t2 = t3
                 eta = t / total * (n - total)
-                print('  Progress {:.1f}% ({}/{}). Loss: {:.6g}% Time: {:.2f}s ETA: {:.2f}s'.format(
-                    total / n, total, n, running_loss, time.time() - t2, eta))
+                print('  Progress {:.1f}% ({}/{}). Loss: {:.8g}% Time: {:.2f}s ETA: {:.2f}s'.format(
+                    total / n, total, n, running_loss/total, time.time() - t2, eta))
+        running_loss /= total
         t = time.time() - t1
         eta = t * (epochs - epoch - 1)
-        print('  Epoch {}: Loss: {:.6g} Time: {:.2f}s ETA: {:.2f}s'.format(epoch, running_loss, t, eta))
+        print('  Epoch {}: Loss: {:.8g} Time: {:.2f}s ETA: {:.2f}s'.format(epoch+1, running_loss, t, eta))
     print('Finished Training. Time: {:.2f}s'.format(time.time()-t0))
 
+
+def testbatch(model, data, target):
+    # forward
+    output = model(data)
+    # get prediction
+    _, predicted = torch.max(output.data, 1)
+    # count
+    num = target.size(0)
+    correct = (predicted == target).sum().item()
+    return num, correct
 
 def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: float = 60, device: str = 'cpu'):
     if device != 'cpu':
@@ -148,15 +166,10 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
             if device != 'cpu':
                 data = data.to(device)
                 target = target.to(device)
-            # forward
-            output = model(data)
-            # get prediction
-            _, predicted = torch.max(output.data, 1)
-            # count
-            c = target.size(0)
-            total += c
-            correct += (predicted == target).sum().item()
-            if total >= n:
+            n, c = testbatch(model, data, target, device)
+            total += n
+            correct += c
+            if total > n:
                 break
             t2 = time.time()
             t = t2 - t1
@@ -168,3 +181,63 @@ def test(model, dataset, batch_size: int = 32, *, n: int = None, show_interval: 
     print('Accuracy: {:.2f}% ({}/{}) Time: {:.2f}s'.format(
         100 * correct / total, correct, total, time.time()-t0))
     return correct / total
+
+
+def process(model, trainset, testset, batch_size: int, epochs: int,
+            optimizer: torch.optim.Optimizer, loss_fn: nn.Module,
+            dump_interval: int, dump_dir: str='', dump_prefix: str='', device: str = 'cpu'):
+    if device != 'cpu':
+        assert torch.cuda.is_available(), 'CUDA is not available'
+    model.to(device)
+    model.eval()
+    # dataloader
+    if device == 'cpu':
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False)
+    else:
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, pin_memory=True)
+    # train, dump and test
+    best_accuracy = 0.0
+    t0 = time.time()
+    for epoch in range(epochs):
+        print('Epoch {}/{}'.format(epoch+1, epochs))
+        # train
+        running_loss = 0.0
+        total = 0
+        t1 = time.time()
+        for data, target in trainloader:
+            if device != 'cpu':
+                data, target = data.to(device), target.to(device)
+            loss = trainbatch(model, data, target, optimizer, loss_fn)
+            running_loss += loss * len(target)
+        running_loss /= len(trainset)
+        t2 = time.time()
+        eta = (t2 - t0) / (epoch + 1) * (epochs - epoch - 1)
+        print('  Epoch {}: Loss: {:.8g} Time: {:.2f}s ETA: {:.2f}s'.format(
+            epoch+1, running_loss, t2 - t1, eta))
+        # test and dump
+        if epoch % dump_interval == dump_interval - 1:
+            total = 0
+            correct = 0
+            t1 = time.time()
+            with torch.no_grad():
+                for data, target in testloader:
+                    if device != 'cpu':
+                        data, target = data.to(device), target.to(device)
+                    n, c = testbatch(model, data, target)
+                    total += n
+                    correct += c
+            accuracy = correct / total
+            t2 = time.time()
+            print('  Accuracy: {:.2f}% ({}/{}) Time: {:.2f}s'.format(
+                accuracy, correct, total, t2 - t1))
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                if dump_dir == '' or dump_dir == '.':
+                    filename = '{}{}.pt'.format(dump_prefix, epoch+1)
+                else:
+                    filename = '{}/{}{}.pt'.format(dump_dir, dump_prefix, epoch+1)
+                print('  Dumping model to {}'.format(filename))
+                save_model_state(model, filename)
+    print('Finished Training. Time: {:.2f}s'.format(time.time()-t0))
