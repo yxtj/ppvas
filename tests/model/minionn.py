@@ -18,7 +18,7 @@ if __name__ == '__main__':
     
     # set model and inshape
     inshape = minionn.inshape
-    model = minionn.model
+    model = minionn.build()
     
     if mode == 'server':
         run_server(host, port, model, inshape, n)
