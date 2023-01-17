@@ -19,6 +19,8 @@ def show_stat(layers, n):
     s_total = layer.base.Stat(0, 0, 0, 0, 0, 0)
     s_relu = layer.base.Stat(0, 0, 0, 0, 0, 0)
     s_linear = layer.base.Stat(0, 0, 0, 0, 0, 0)
+    s_l_conv = layer.base.Stat(0, 0, 0, 0, 0, 0)
+    s_l_fc = layer.base.Stat(0, 0, 0, 0, 0, 0)
     s_pool = layer.base.Stat(0, 0, 0, 0, 0, 0)
     for i, lyr in enumerate(layers):
         print("  Layer {} {}: {}".format(i, lyr.__class__.__name__, lyr.stat))
@@ -33,10 +35,17 @@ def show_stat(layers, n):
                               layer.conv_last.LastConvClient, layer.conv_last.LastConvServer,
                               layer.fc_last.LastFcClient, layer.fc_last.LastFcServer,)):
             s_linear += lyr.stat
+            if isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
+                                layer.conv_last.LastConvClient, layer.conv_last.LastConvServer,)):
+                s_l_conv += lyr.stat
+            else:
+                s_l_fc += lyr.stat
     print()
     show_stat_one("Total", s_total, n)
     show_stat_one("  ReLU", s_relu, n)
     show_stat_one("  Linear", s_linear, n)
+    show_stat_one("  Linear-Conv", s_l_conv, n)
+    show_stat_one("  Linear-FC", s_l_fc, n)
     show_stat_one("  Pool", s_pool, n)
 
 
@@ -67,7 +76,7 @@ def run_server(host: str, port: int, model: torch.nn.Module, inshape: tuple, n: 
 
 
 def run_client(host: str, port: int, model: torch.nn.Module, inshape: tuple, he:Pyfhel,
-               dataset: list=None, n: int=1):
+               dataset=None, n: int=1):
     assert dataset is None or len(dataset) == n
     # connect to server
     s = socket.create_connection((host, port))
