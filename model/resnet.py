@@ -74,15 +74,15 @@ def build_resnet(num_blocks, num_class=100, version=1, residual=True):
         ])
     if not residual:
         layers = [ lyr for lyr in layers if not isinstance(lyr, te.ShortCut) ]
-    layers.append(nn.Softmax())
+    layers.append(nn.Softmax(1))
     return te.SequentialBuffer(*layers)
 
 
-def resnet20(version=4, residual=True):
+def resnet20(version=3, residual=True):
     return build_resnet([3, 3, 3], 100, version, residual)
 
-def resnet32(version=4, residual=True):
+def resnet32(version=3, residual=True):
     return build_resnet([5, 5, 5], 100, version, residual)
 
-def resnet44(version=4, residual=True):
+def resnet44(version=3, residual=True):
     return build_resnet([7, 7, 7], 100, version, residual)
