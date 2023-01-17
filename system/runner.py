@@ -22,6 +22,7 @@ def show_stat(layers, n):
     s_l_conv = layer.base.Stat(0, 0, 0, 0, 0, 0)
     s_l_fc = layer.base.Stat(0, 0, 0, 0, 0, 0)
     s_pool = layer.base.Stat(0, 0, 0, 0, 0, 0)
+    s_sc = layer.base.Stat(0, 0, 0, 0, 0, 0)
     for i, lyr in enumerate(layers):
         print("  Layer {} {}: {}".format(i, lyr.__class__.__name__, lyr.stat))
         s_total += lyr.stat
@@ -40,12 +41,15 @@ def show_stat(layers, n):
                 s_l_conv += lyr.stat
             else:
                 s_l_fc += lyr.stat
+        elif isinstance(lyr, (layer.shortcut.ShortCutClient, layer.shortcut.ShortCutServer)):
+            s_sc += lyr.stat
     print()
     show_stat_one("Total", s_total, n)
     show_stat_one("  ReLU", s_relu, n)
     show_stat_one("  Linear", s_linear, n)
     show_stat_one("  Linear-Conv", s_l_conv, n)
     show_stat_one("  Linear-FC", s_l_fc, n)
+    show_stat_one("  Shortcut", s_sc, n)
     show_stat_one("  Pool", s_pool, n)
 
 
