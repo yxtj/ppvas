@@ -21,9 +21,9 @@ if __name__ == '__main__':
     model = minionn.model
     
     if mode == 'server':
-        run_server(host, port, model, inshape)
+        run_server(host, port, model, inshape, n)
     else:
         he = Pyfhel()
         he.contextGen(scheme='ckks', n=2**13, scale=2**30, qi_sizes=[30]*5)
         he.keyGen()
-        run_client(host, port, model, inshape, he)
+        run_client(host, port, model, inshape, he, None, n)
