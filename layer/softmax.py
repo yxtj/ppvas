@@ -9,7 +9,7 @@ from Pyfhel import Pyfhel
 class SoftmaxClient(LocalLayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         super().__init__(socket, ishape, oshape, he)
-        self.layer = nn.Softmax()
+        self.layer = nn.Softmax(1)
     
     def online(self, xm) -> torch.Tensor:
         t = time.time()
