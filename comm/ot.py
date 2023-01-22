@@ -75,7 +75,7 @@ class ObliviousTransferClient():
         h1 = self.decrypt_xor(c, k1)
         cnt0 = self.send_data(x0, h0)
         cnt1 = self.send_data(x1, h1)
-        return 2 + cnt0, cnt1, self.nbyte
+        return 2 + cnt0 + cnt1, self.nbyte
     
     # local functions
     
@@ -109,8 +109,10 @@ class ObliviousTransferServer():
         self.rsa = RSA(nbits)
 
     def setup(self):
-        data = self.socket.recv(2)
-        n, e = struct.unpack('!BB', data)
+        data = self.socket.recv(self.nbyte)
+        n = int.from_bytes(data, 'big')
+        data = self.socket.recv(self.nbyte)
+        e = int.from_bytes(data, 'big')
         self.rsa.setup(n, e)
     
     def run(self, b:int) -> tuple[bytes, int, int]:
@@ -135,7 +137,7 @@ class ObliviousTransferServer():
             m = mask_data(m0, h)
         else:
             m = mask_data(m1, h)
-        return m, self.nbyte, 2 + cnt0, cnt1
+        return m, self.nbyte, 2 + cnt0 + cnt1
     
     # local functions
     
@@ -153,6 +155,6 @@ class ObliviousTransferServer():
             n -= len(d)
             buffer.append(d)
         data = b''.join(buffer)
-        return data, 4 + n
+        return data, 4 + len(data)
     
     
