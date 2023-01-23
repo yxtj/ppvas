@@ -7,6 +7,9 @@ import multiprocessing as mp
 
 host, port = 'localhost', 12345
 
+m0 = b'THIS IS MESSAGE ONE.'
+m1 = b'this is message two.'
+
 def run_server(nbits, msg_len, n):
     prefix = '[Server]'
     sock = socket.create_server(('localhost', 12345))
@@ -16,13 +19,14 @@ def run_server(nbits, msg_len, n):
     print(prefix, "setup")
     server.setup()
     for i in range(n):
-        b = ot.Crypto.Random.random.randint(0, 1)
+        b = np.random.randint(0, 2)
         print(prefix, f"Run {i}: choose {b}")
         t = time.time()
         data, n_send, n_recv = server.run(b)
         t = time.time() - t
-        print(prefix, "send", n_send, "recv", n_recv, "time", t)
-        print(prefix, "recv:", data)
+        check = data.startswith(m0) if b == 0 else data.startswith(m1)
+        print(prefix, "send:", n_send, "recv:", n_recv, "time:", t, "correct:", check)
+        print(prefix, "recv:", data[:64])
 
 
 def run_client(nbits, msg_len, n):
@@ -37,14 +41,14 @@ def run_client(nbits, msg_len, n):
     lm = len(m0)
     m0 = m0 * (msg_len//lm) + m0[:msg_len%lm]
     m1 = m1 * (msg_len//lm) + m1[:msg_len%lm]
-    print(prefix, "msg0:", m0)
-    print(prefix, "msg1:", m1)
+    print(prefix, "msg0:", m0[:64])
+    print(prefix, "msg1:", m1[:64])
     for i in range(n):
         print(prefix, f"Run {i}")
         t = time.time()
         n_send, n_recv = client.run(m0, m1)
         t = time.time() - t
-        print(prefix, "send", n_send, "recv", n_recv, "time", t)
+        print(prefix, "send:", n_send, "recv:", n_recv, "time:", t)
 
 
 if __name__ == '__main__':
