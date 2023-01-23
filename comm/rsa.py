@@ -1,5 +1,6 @@
 import Crypto.PublicKey.RSA
 import Crypto.Util
+import numpy as np
 
 
 class RSA():
@@ -9,6 +10,7 @@ class RSA():
         self.n = None
         self.e = None
         self.d = None
+        self.mlength = self.nbyte - 1 # max length of message, may be updated upon setup
     
     def setup(self, n:int=None, e:int=None):
         '''
@@ -20,10 +22,14 @@ class RSA():
             self.n = n
             self.e = e
         else:
-            key_pair = Crypto.PublicKey.RSA.generate(self.nbits)
+            key_pair = Crypto.PublicKey.RSA.generate(self.nbits, np.random.bytes)
             self.n = key_pair.n
             self.d = key_pair.d
             self.e = key_pair.e
+        self.set_max_message_length()
+    
+    def can_encrypt(self, data_bytes:bytes) -> bool:
+        return len(data_bytes) <= self.mlength
     
     def encrypt(self, data_bytes:bytes) -> bytes:
         assert len(data_bytes) <= self.nbyte
@@ -39,3 +45,12 @@ class RSA():
         mr = Crypto.Util.number.long_to_bytes(r, self.nbyte)
         return mr
     
+    def set_max_message_length(self):
+        assert self.n is not None
+        bytes_n = Crypto.Util.number.long_to_bytes(self.n, self.nbyte)
+        for i in range(self.nbyte):
+            if bytes_n[i] != 0:
+                break
+        self.mlength = self.nbyte - i - 1
+        
+        
