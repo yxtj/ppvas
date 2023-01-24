@@ -19,7 +19,7 @@ def deserialize_numpy_meta(data:bytes) -> tuple[int, int, str, tuple[int]]:
     shape = struct.unpack('!'+'i'*shape_len, data[12+type_len : header_len])
     return header_len, nbytes, type_str, shape
 
-def _recv_big_data_(s:socket.socket, n:int, left:bytes=None, buf_sz:int=4096) -> tuple[bytes, bytes]:
+def _recv_big_data_(s:socket.socket, n:int, left:bytes=None, buf_sz:int=4096) -> bytes:
     if left is not None and len(left) >= n:
         return left[:n], left[n:]
     if left is not None:
@@ -32,18 +32,19 @@ def _recv_big_data_(s:socket.socket, n:int, left:bytes=None, buf_sz:int=4096) ->
         n -= len(t)
         buffer.append(t)
     data = b''.join(buffer)
-    return data, b''
+    return data
 
 # byte chunk
 
 def send_chunk(s:socket.socket, data:bytes) -> int:
-    s.sendall(struct.pack('!i', len(data))+data)
-    return len(data)+4
+    s.sendall(struct.pack('!i', len(data)))
+    s.sendall(data)
+    return 4 + len(data)
 
 def recv_chunk(s:socket.socket, buf_sz:int=4096) -> bytes:
     data = s.recv(buf_sz)
     n, = struct.unpack('!i', data[:4])
-    return _recv_big_data_(s, n, data[4:], buf_sz)[0]
+    return _recv_big_data_(s, n, data[4:], buf_sz)
 
 # numpy
     
@@ -57,7 +58,7 @@ def send_numpy(s:socket.socket, data:np.ndarray) -> int:
 def recv_numpy(s:socket.socket, buf_sz:int=4096) -> tuple[np.ndarray, int]:
     data = s.recv(buf_sz)
     header_len, nbytes, type_str, shape = deserialize_numpy_meta(data)
-    buffer = _recv_big_data_(s, nbytes, data[header_len:])[0]
+    buffer = _recv_big_data_(s, nbytes, data[header_len:])
     result = np.frombuffer(buffer, dtype=type_str).reshape(shape)
     return result, header_len + nbytes
 
@@ -75,7 +76,7 @@ def send_torch(s:socket.socket, data:torch.Tensor) -> int:
 def recv_torch(s:socket.socket, buf_sz:int=4096) -> tuple[torch.Tensor, int]:
     data = s.recv(buf_sz)
     nbytes, = struct.unpack('!i', data[:4])
-    buffer = _recv_big_data_(s, nbytes, data[4:])[0]
+    buffer = _recv_big_data_(s, nbytes, data[4:])
     result = torch.load(io.BytesIO(buffer))
     result.requires_grad = False
     return result, 4 + nbytes
@@ -130,7 +131,7 @@ def recv_he_matrix(s:socket.socket, he:Pyfhel, buf_sz:int=4096) -> tuple[np.ndar
     r = res.flatten()
     size = np.prod(shape)
     for i in range(size):
-        b = _recv_big_data_(s, ct_len)[0]
+        b = _recv_big_data_(s, ct_len)
         ct = PyCtxt(pyfhel=he, bytestring=b)
         r[i] = ct
     return res, 4 + header_len + nbytes
