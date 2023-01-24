@@ -20,13 +20,14 @@ def run_server(nbits, msg_len, n):
     server.setup()
     for i in range(n):
         b = np.random.randint(0, 2)
+        b=0
         print(prefix, f"Run {i}: choose {b}")
         t = time.time()
         data, n_send, n_recv = server.run(b)
         t = time.time() - t
         check = data.startswith(m0) if b == 0 else data.startswith(m1)
-        print(prefix, "send:", n_send, "recv:", n_recv, "time:", t, "correct:", check)
-        print(prefix, "recv:", data[:64])
+        print(f"{prefix} send: {n_send} recv: {n_recv} time: {t} correct: {check}")
+        print(f"{prefix} recv={data[:64]}")
 
 
 def run_client(nbits, msg_len, n):
@@ -48,7 +49,7 @@ def run_client(nbits, msg_len, n):
         t = time.time()
         n_send, n_recv = client.run(m0, m1)
         t = time.time() - t
-        print(prefix, "send:", n_send, "recv:", n_recv, "time:", t)
+        print(f"{prefix} send: {n_send} recv: {n_recv} time: {t}")
 
 
 if __name__ == '__main__':
