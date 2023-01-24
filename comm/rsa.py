@@ -43,7 +43,9 @@ class RSA():
         assert len(data_bytes) <= self.nbyte
         data_n = Crypto.Util.number.bytes_to_long(data_bytes)
         r = pow(data_n, self.d, self.n)
-        mr = Crypto.Util.number.long_to_bytes(r, self.mlength) # remove the leading 0
+        # mr = Crypto.Util.number.long_to_bytes(r, self.mlength) # this is wrong for large ciphertext
+        mr = Crypto.Util.number.long_to_bytes(r, self.nbyte)
+        mr = mr[-self.mlength:] # remove the leading byte
         return mr
     
     def encrypt_big(self, data_types:bytes) -> bytes:
