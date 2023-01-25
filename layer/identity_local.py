@@ -19,7 +19,7 @@ class LocalIdentityServer(LocalLayerServer):
         assert isinstance(layer, nn.Identity)
         super().__init__(socket, ishape, oshape, layer)
 
-    def setup(self, mlast:torch.Tensor) -> None:
-        super().setup(mlast)
+    def setup(self, mlast:torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
+        super().setup(mlast, m_other=m_other, identity_m=identity_m)
         self.m = mlast
         

@@ -118,13 +118,23 @@ class LayerServer(LayerCommon):
         self.mlast = None
         self.m = None
     
-    def setup(self, mlast:torch.Tensor) -> None:
+    def setup(self, mlast:torch.Tensor, *, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
+        '''
+        Setup the layer's factors "mlast" and "m". In special cases, mlast may be a constant like 1.
+        "m" should be setup IN DERIVED CLASSES.
+        For some layers, special parameter "m_other" and "identity_m" can be used in derived classes.
+        1. "m_other" is used for shortcut connection.
+        2. "identity_m" is used for the last non-local layer, which is prepared for output.
+        '''
         if isinstance(mlast, (int, float)):
             mlast = torch.zeros(self.ishape) + mlast
         else:
             assert mlast.shape == self.ishape
         self.mlast = mlast
-        # set m in child class
+        if identity_m:
+            self.set_m_one()
+        # otherwise, set m in the derived class
+        # use m_other for shortcut connection in the derived class
     
     def offline(self) -> torch.Tensor:
         raise NotImplementedError
@@ -138,6 +148,9 @@ class LayerServer(LayerCommon):
         data = self.layer(data)
         self.layer.bias = bias
         return data
+
+    def set_m_one(self) -> None:
+        self.m = torch.ones(self.oshape)
 
     def set_m_any(self) -> None:
         t = __MUL_SHARE_RANGE__*torch.rand(self.oshape)
@@ -186,8 +199,10 @@ class LocalLayerServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         super().__init__(socket, ishape, oshape, layer)
     
-    def setup(self, mlast: torch.Tensor) -> None:
-        super().setup(mlast)
+    def setup(self, mlast: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
+        assert m_other is None
+        assert not identity_m
+        super().setup(mlast, m_other=m_other, identity_m=identity_m)
         self.m = mlast
     
     def offline(self) -> None:

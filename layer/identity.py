@@ -17,10 +17,11 @@ class IdentityServer(LayerServer):
         assert isinstance(layer, nn.Identity)
         super().__init__(socket, ishape, oshape, layer)
     
-    def setup(self, m_last: torch.Tensor) -> None:
-        super().setup(m_last)
+    def setup(self, m_last: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
+        super().setup(m_last, m_other=m_other, identity_m=identity_m)
         t = time.time()
-        self.set_m_positive()
+        if not identity_m:
+            self.set_m_positive()
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> torch.Tensor:

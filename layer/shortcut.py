@@ -25,12 +25,12 @@ class ShortCutServer(LayerServer):
         self.other_offset = layer.otherlayer
         self.mj = None
     
-    def setup(self, m_last: torch.Tensor, m_other: torch.Tensor) -> None:
-        super().setup(m_last)
+    def setup(self, m_last: torch.Tensor, m_other: torch.Tensor, identity_m: bool=False) -> None:
+        super().setup(m_last, m_other=m_other, identity_m=identity_m)
         t = time.time()
         assert self.ishape == m_other.shape
-        self.set_m_any()
-        self.m = torch.ones(self.oshape)
+        if not identity_m:
+            self.set_m_any()
         self.mj = m_other
         self.stat.time_offline += time.time() - t
         # print("shortcut setup: mi={}, mj={}, m={}".format(self.mlast, self.mj, self.m))

@@ -12,10 +12,12 @@ class Server():
         self.model = model
         self.inshape = inshape
         # layers
-        self.layers, self.shortcuts = util.make_server_model(socket, model, inshape)
+        self.layers, self.linears, self.shortcuts, self.locals = util.make_server_model(socket, model, inshape)
+        # for shortcut layer
         self.to_buffer = [v for k,v in self.shortcuts.items()]
     
     def offline(self):
+        last_non_local = util.find_last_non_local_layer(len(self.layers), self.locals)
         buffer = {}
         mlast = 1
         for i, lyr in enumerate(self.layers):
@@ -26,9 +28,12 @@ class Server():
                 # assert isinstance(lyr, layer.shortcut.ShortCutServer)
                 idx = self.shortcuts[i]
                 m_other = self.layers[idx].mlast
-                lyr.setup(mlast, m_other)
             else:
-                lyr.setup(mlast)
+                m_other = None
+            lyr.setup(mlast, m_other=m_other, identity_m=(i==last_non_local))
+            if i == last_non_local:
+                print("last non local layer")
+                print("  m :", lyr.m)
             mlast = lyr.m
             # print("  m :", mlast)
             # offline

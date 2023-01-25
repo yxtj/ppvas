@@ -32,12 +32,9 @@ def show_stat(layers, n):
                               layer.avgpool.AvgPoolClient, layer.avgpool.AvgPoolServer)):
             s_pool += lyr.stat
         elif isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
-                              layer.fc.FcClient, layer.fc.FcServer,
-                              layer.conv_last.LastConvClient, layer.conv_last.LastConvServer,
-                              layer.fc_last.LastFcClient, layer.fc_last.LastFcServer,)):
+                              layer.fc.FcClient, layer.fc.FcServer)):
             s_linear += lyr.stat
-            if isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
-                                layer.conv_last.LastConvClient, layer.conv_last.LastConvServer,)):
+            if isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,)):
                 s_l_conv += lyr.stat
             else:
                 s_l_fc += lyr.stat
@@ -80,7 +77,7 @@ def run_server(host: str, port: int, model: torch.nn.Module, inshape: tuple, n: 
 
 
 def run_client(host: str, port: int, model: torch.nn.Module, inshape: tuple, he:Pyfhel,
-               dataset=None, n: int=1):
+               dataset=None, n: int=1, verify: bool=False):
     assert dataset is None or len(dataset) == n
     # connect to server
     s = socket.create_connection((host, port))
@@ -100,6 +97,11 @@ def run_client(host: str, port: int, model: torch.nn.Module, inshape: tuple, he:
         d = torch.rand(inshape) if dataset is None else dataset[i]
         with torch.no_grad():
             res = client.online(d)
+        if verify:
+            with torch.no_grad():
+                res2 = model(d)
+            print("Verify {}: mean absolute difference: {:.6g}, mean relative difference: {:.6g}".format(
+                i, torch.abs(res - res2).mean(), torch.nanmean(torch.abs(res - res2)/res2)))
     t2 = time.time()
     s.close()
     # finish

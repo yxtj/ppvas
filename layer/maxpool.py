@@ -50,11 +50,13 @@ class MaxPoolServer(LayerServer):
         super().__init__(socket, ishape, oshape, layer)
         self.stride_shape = stride_shape
     
-    def setup(self, mlast: torch.Tensor) -> None:
-        super().setup(mlast)
+    def setup(self, mlast: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
+        assert m_other is None
+        super().setup(mlast, m_other=m_other, identity_m=identity_m)
         t = time.time()
         # set m
-        self.set_m_positive()
+        if not identity_m:
+            self.set_m_positive()
         # self.m = torch.ones(oshape)
         # print("m", self.m)
         # set mp

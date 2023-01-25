@@ -15,7 +15,8 @@ class Client():
         # he
         self.he = he
         # layers
-        self.layers, self.shortcuts = util.make_client_model(socket, model, inshape, he)
+        self.layers, self.linears, self.shortcuts, self.locals = util.make_client_model(socket, model, inshape, he)
+        # for shortcut layer
         self.to_buffer = [v for k,v in self.shortcuts.items()]
         
     def offline(self):

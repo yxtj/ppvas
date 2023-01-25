@@ -18,32 +18,34 @@ def compute_shape(model, inshape):
 def make_client_model(socket, model, inshape, he):
     shapes = compute_shape(model, inshape)
     layers = []
+    linears = [] # linear layers
     scl = {} # shortcut layers
+    locals = [] # local layers
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
-            if i == len(model) - 1:
-                layers.append(layer.conv_last.LastConvClient(socket, shapes[i], shapes[i+1], he))
-            else:
-                layers.append(layer.conv.ConvClient(socket, shapes[i], shapes[i+1], he))
+            layers.append(layer.conv.ConvClient(socket, shapes[i], shapes[i+1], he))
+            linears.append(i)
         elif isinstance(lyr, nn.Linear):
-            if i == len(model) - 1:
-                layers.append(layer.fc_last.LastFcClient(socket, shapes[i], shapes[i+1], he))
-            else:
-                layers.append(layer.fc.FcClient(socket, shapes[i], shapes[i+1], he))
+            layers.append(layer.fc.FcClient(socket, shapes[i], shapes[i+1], he))
+            linears.append(i)
         elif isinstance(lyr, nn.ReLU):
             layers.append(layer.relu.ReLUClient(socket, shapes[i], shapes[i+1], he))
+            locals.append(i)
         elif isinstance(lyr, nn.MaxPool2d):
             layers.append(layer.maxpool.MaxPoolClient(socket, shapes[i], shapes[i+1], he, lyr))
         elif isinstance(lyr, nn.AvgPool2d):
             layers.append(layer.avgpool.AvgPoolClient(socket, shapes[i], shapes[i+1], he, lyr))
+            linears.append(i)
         elif isinstance(lyr, nn.Flatten):
             layers.append(layer.flatten.FlattenClient(socket, shapes[i], shapes[i+1], he))
+            locals.append(i)
         elif isinstance(lyr, ShortCut):
             layers.append(layer.shortcut.ShortCutClient(socket, shapes[i], shapes[i+1], he))
             scl[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
         elif isinstance(lyr, nn.Softmax):
             assert i == len(model) - 1
             layers.append(layer.softmax.SoftmaxClient(socket, shapes[i], shapes[i+1], he))
+            locals.append(i)
         else:
             raise Exception("Unknown layer type: " + str(lyr))
     # set shortcuts inputs
@@ -53,37 +55,39 @@ def make_client_model(socket, model, inshape, he):
         if isinstance(layers[oidx], layer.base.LocalLayerClient):
             raise Exception("Shortcut input should not be a local layer.")
         shortcuts[idx] = oidx
-    return layers, shortcuts
+    return layers, linears, shortcuts, locals
 
 
 def make_server_model(socket, model, inshape):
     shapes = compute_shape(model, inshape)
     layers = []
-    scl = {}
+    linears = [] # linear layers
+    scl = {} # shortcut layers
+    locals = [] # local layers
     for i, lyr in enumerate(model):
         if isinstance(lyr, nn.Conv2d):
-            if i == len(model) - 1:
-                layers.append(layer.conv_last.LastConvServer(socket, shapes[i], shapes[i+1], lyr))
-            else:
-                layers.append(layer.conv.ConvServer(socket, shapes[i], shapes[i+1], lyr))
+            layers.append(layer.conv.ConvServer(socket, shapes[i], shapes[i+1], lyr))
+            linears.append(i)
         elif isinstance(lyr, nn.Linear):
-            if i == len(model) - 1:
-                layers.append(layer.fc_last.LastFcServer(socket, shapes[i], shapes[i+1], lyr))
-            else:
-                layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr))
+            layers.append(layer.fc.FcServer(socket, shapes[i], shapes[i+1], lyr))
+            linears.append(i)
         elif isinstance(lyr, nn.ReLU):
             layers.append(layer.relu.ReLUServer(socket, shapes[i], shapes[i+1], lyr))
+            locals.append(i)
         elif isinstance(lyr, nn.MaxPool2d):
             layers.append(layer.maxpool.MaxPoolServer(socket, shapes[i], shapes[i+1], lyr))
         elif isinstance(lyr, nn.AvgPool2d):
             layers.append(layer.avgpool.AvgPoolServer(socket, shapes[i], shapes[i+1], lyr))
+            linears.append(i)
         elif isinstance(lyr, nn.Flatten):
             layers.append(layer.flatten.FlattenServer(socket, shapes[i], shapes[i+1], lyr))
+            locals.append(i)
         elif isinstance(lyr, ShortCut):
             layers.append(layer.shortcut.ShortCutServer(socket, shapes[i], shapes[i+1], lyr))
             scl[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
         elif isinstance(lyr, nn.Softmax):
             layers.append(layer.softmax.SoftmaxServer(socket, shapes[i], shapes[i+1], lyr))
+            locals.append(i)
         else:
             raise Exception("Unknown layer type: " + str(lyr))
     # set shortcuts inputs
@@ -93,4 +97,11 @@ def make_server_model(socket, model, inshape):
         if isinstance(layers[oidx], layer.base.LocalLayerServer):
             raise Exception("Shortcut input should not be a local layer.")
         shortcuts[idx] = oidx
-    return layers, shortcuts
+    return layers, linears, shortcuts, locals
+
+def find_last_non_local_layer(num_layer, local_layers):
+    for i in range(num_layer-1, -1, -1):
+        if i not in local_layers:
+            return i
+    return -1
+    
