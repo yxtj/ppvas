@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from socket import socket
 import time
 import torch
@@ -6,33 +5,11 @@ import numpy as np
 from Pyfhel import Pyfhel
 
 import comm.util
+from layer_basic.stat import Stat
 
 __ADD_SHARE_RANGE__ = 10
 __MUL_SHARE_RANGE__ = 10
 __POSITIVE_EPS__ = 0.01
-
-@dataclass
-class Stat:
-    time_offline: float
-    byte_offline_send: float
-    byte_offline_recv: float
-    # time_offline_send: float
-    # time_offline_recv: float
-    time_online: float
-    byte_online_send: float
-    byte_online_recv: float
-    # time_online_send: float
-    # time_online_recv: float
-    
-    def __add__(self, other):
-        return Stat(
-            self.time_offline + other.time_offline,
-            self.byte_offline_send + other.byte_offline_send,
-            self.byte_offline_recv + other.byte_offline_recv,
-            self.time_online + other.time_online,
-            self.byte_online_send + other.byte_online_send,
-            self.byte_online_recv + other.byte_online_recv,
-        )
 
 
 class LayerCommon():

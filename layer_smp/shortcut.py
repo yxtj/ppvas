@@ -1,4 +1,4 @@
-from layer.base import LayerClient, LayerServer
+from .base import LayerClient, LayerServer
 
 from socket import socket
 import time

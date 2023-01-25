@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-import layer
 from torch_extension.shortcut import ShortCut
+
+import layer_smp as layer
 
 
 def compute_shape(model, inshape):

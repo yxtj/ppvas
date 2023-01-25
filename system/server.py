@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 
 from model import util
-import layer
 
 class Server():
     def __init__(self, socket: socket.socket, model: nn.Module, inshape: tuple):

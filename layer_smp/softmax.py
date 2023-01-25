@@ -1,4 +1,4 @@
-from layer.base import LocalLayerClient, LocalLayerServer
+from .base import LocalLayerClient, LocalLayerServer
 
 from socket import socket
 import time
@@ -6,20 +6,20 @@ import torch
 import torch.nn as nn
 from Pyfhel import Pyfhel
 
-class LocalIdentityClient(LocalLayerClient):
+class SoftmaxClient(LocalLayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         super().__init__(socket, ishape, oshape, he)
-        self.layer = nn.ReLU()
+        self.layer = nn.Softmax(1)
     
     def online(self, xm) -> torch.Tensor:
-        return xm
+        t = time.time()
+        data = self.layer(xm)
+        self.stat.time_online += time.time() - t
+        return data
     
-class LocalIdentityServer(LocalLayerServer):
-    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
-        assert isinstance(layer, nn.Identity)
-        super().__init__(socket, ishape, oshape, layer)
 
-    def setup(self, mlast:torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
-        super().setup(mlast, m_other=m_other, identity_m=identity_m)
-        self.m = mlast
+class SoftmaxServer(LocalLayerServer):
+    def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
+        assert isinstance(layer, nn.Softmax)
+        super().__init__(socket, ishape, oshape, layer)
         

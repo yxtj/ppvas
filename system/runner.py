@@ -4,9 +4,9 @@ import torch
 import socket
 from Pyfhel import Pyfhel
 
-from model import minionn
 import system
-import layer
+
+import layer_smp as layer
 
 def show_stat_one(promot:str, s:layer.base.Stat, n:int):
     print("{}: offline time (s): {:.3f}, send (kB): {:.3f}, recv (kB): {:.3f}; "
