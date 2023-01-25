@@ -2,16 +2,16 @@ from dataclasses import dataclass
 
 @dataclass
 class Stat:
-    time_offline: float
-    byte_offline_send: float
-    byte_offline_recv: float
-    # time_offline_send: float
-    # time_offline_recv: float
-    time_online: float
-    byte_online_send: float
-    byte_online_recv: float
-    # time_online_send: float
-    # time_online_recv: float
+    time_offline: float = 0.0
+    byte_offline_send: float = 0.0
+    byte_offline_recv: float = 0.0
+    # time_offline_send: float = 0.0
+    # time_offline_recv: float = 0.0
+    time_online: float = 0.0
+    byte_online_send: float = 0.0
+    byte_online_recv: float = 0.0
+    # time_online_send: float = 0.0
+    # time_online_recv: float = 0.0
     
     def __add__(self, other):
         return Stat(

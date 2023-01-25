@@ -16,13 +16,13 @@ def show_stat_one(promot:str, s:layer.base.Stat, n:int):
         ))
 
 def show_stat(layers, n):
-    s_total = layer.base.Stat(0, 0, 0, 0, 0, 0)
-    s_relu = layer.base.Stat(0, 0, 0, 0, 0, 0)
-    s_linear = layer.base.Stat(0, 0, 0, 0, 0, 0)
-    s_l_conv = layer.base.Stat(0, 0, 0, 0, 0, 0)
-    s_l_fc = layer.base.Stat(0, 0, 0, 0, 0, 0)
-    s_pool = layer.base.Stat(0, 0, 0, 0, 0, 0)
-    s_sc = layer.base.Stat(0, 0, 0, 0, 0, 0)
+    s_total = layer.base.Stat()
+    s_relu = layer.base.Stat()
+    s_linear = layer.base.Stat()
+    s_l_conv = layer.base.Stat()
+    s_l_fc = layer.base.Stat()
+    s_pool = layer.base.Stat()
+    s_sc = layer.base.Stat()
     for i, lyr in enumerate(layers):
         print("  Layer {} {}: {}".format(i, lyr.__class__.__name__, lyr.stat))
         s_total += lyr.stat

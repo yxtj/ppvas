@@ -18,7 +18,7 @@ class LayerCommon():
         self.ishape = ishape
         self.oshape = oshape
         self.he = he
-        self.stat = Stat(0, 0, 0, 0, 0, 0)
+        self.stat = Stat()
     
     def send_plain(self, data:torch.Tensor) -> None:
         self.stat.byte_online_send += comm.util.send_torch(self.socket, data)
