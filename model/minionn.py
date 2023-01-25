@@ -33,7 +33,8 @@ def build(weight_path=None):
         nn.ReLU(),
         
         nn.Flatten(),
-        nn.Linear(1024, 10)
+        nn.Linear(1024, 10),
+        nn.Softmax2d(dim=1),
     )
     # load pretrained weights
     if weight_path is not None:
