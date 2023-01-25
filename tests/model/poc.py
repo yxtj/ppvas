@@ -32,7 +32,9 @@ if __name__ == '__main__':
         #     for p in lyr.parameters():
         #         p.data.fill_(i + 1)
     else:
-        raise ValueError("Unknown model name: {}".format(model_name))
+        print("Unknown model name: {}".format(model_name))
+        print("Available models: {}".format(poc.map.keys()))
+        sys.exit(1)
     
     if mode == 'server':
         s = socket.create_server((host, port))
