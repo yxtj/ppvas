@@ -137,3 +137,5 @@ dmypy.json
 
 /pypath.bat
 /pypath.sh
+
+/plot/*.csv
