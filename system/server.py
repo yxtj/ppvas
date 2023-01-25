@@ -30,9 +30,6 @@ class Server():
             else:
                 m_other = None
             lyr.setup(mlast, m_other=m_other, identity_m=(i==last_non_local))
-            if i == last_non_local:
-                print("last non local layer")
-                print("  m :", lyr.m)
             mlast = lyr.m
             # print("  m :", mlast)
             # offline
