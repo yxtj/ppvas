@@ -5,10 +5,10 @@ import socket
 from Pyfhel import Pyfhel
 
 import system
+from system import util
+from layer_basic.stat import Stat
 
-import layer_smp as layer
-
-def show_stat_one(promot:str, s:layer.base.Stat, n:int):
+def show_stat_one(promot:str, s:Stat, n:int):
     print("{}: offline time (s): {:.3f}, send (kB): {:.3f}, recv (kB): {:.3f}; "
           "online time (s): {:.3f}, send (kB): {:.3f}, recv (kB): {:.3f}".format(
               promot, s.time_offline, s.byte_offline_send/1000, s.byte_offline_recv/1000,
@@ -16,30 +16,7 @@ def show_stat_one(promot:str, s:layer.base.Stat, n:int):
         ))
 
 def show_stat(layers, n):
-    s_total = layer.base.Stat()
-    s_relu = layer.base.Stat()
-    s_linear = layer.base.Stat()
-    s_l_conv = layer.base.Stat()
-    s_l_fc = layer.base.Stat()
-    s_pool = layer.base.Stat()
-    s_sc = layer.base.Stat()
-    for i, lyr in enumerate(layers):
-        print("  Layer {} {}: {}".format(i, lyr.__class__.__name__, lyr.stat))
-        s_total += lyr.stat
-        if isinstance(lyr, (layer.relu.ReLUClient, layer.relu.ReLUServer)):
-            s_relu += lyr.stat
-        elif isinstance(lyr, (layer.maxpool.MaxPoolClient, layer.maxpool.MaxPoolServer,
-                              layer.avgpool.AvgPoolClient, layer.avgpool.AvgPoolServer)):
-            s_pool += lyr.stat
-        elif isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
-                              layer.fc.FcClient, layer.fc.FcServer)):
-            s_linear += lyr.stat
-            if isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,)):
-                s_l_conv += lyr.stat
-            else:
-                s_l_fc += lyr.stat
-        elif isinstance(lyr, (layer.shortcut.ShortCutClient, layer.shortcut.ShortCutServer)):
-            s_sc += lyr.stat
+    s_total, s_relu, s_linear, s_l_conv, s_l_fc, s_pool, s_sc = util.analyze_stat(layers, n)
     print()
     show_stat_one("Total", s_total, n)
     show_stat_one("  ReLU", s_relu, n)

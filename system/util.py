@@ -100,9 +100,38 @@ def make_server_model(socket, model, inshape):
         shortcuts[idx] = oidx
     return layers, linears, shortcuts, locals
 
+
 def find_last_non_local_layer(num_layer, local_layers):
     for i in range(num_layer-1, -1, -1):
         if i not in local_layers:
             return i
     return -1
+
+
+def analyze_stat(layers, n):
+    s_total = layer.base.Stat()
+    s_relu = layer.base.Stat()
+    s_linear = layer.base.Stat()
+    s_l_conv = layer.base.Stat()
+    s_l_fc = layer.base.Stat()
+    s_pool = layer.base.Stat()
+    s_sc = layer.base.Stat()
+    for i, lyr in enumerate(layers):
+        print("  Layer {} {}: {}".format(i, lyr.__class__.__name__, lyr.stat))
+        s_total += lyr.stat
+        if isinstance(lyr, (layer.relu.ReLUClient, layer.relu.ReLUServer)):
+            s_relu += lyr.stat
+        elif isinstance(lyr, (layer.maxpool.MaxPoolClient, layer.maxpool.MaxPoolServer,
+                              layer.avgpool.AvgPoolClient, layer.avgpool.AvgPoolServer)):
+            s_pool += lyr.stat
+        elif isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,
+                              layer.fc.FcClient, layer.fc.FcServer)):
+            s_linear += lyr.stat
+            if isinstance(lyr, (layer.conv.ConvClient, layer.conv.ConvServer,)):
+                s_l_conv += lyr.stat
+            else:
+                s_l_fc += lyr.stat
+        elif isinstance(lyr, (layer.shortcut.ShortCutClient, layer.shortcut.ShortCutServer)):
+            s_sc += lyr.stat
+    return s_total, s_relu, s_linear, s_l_conv, s_l_fc, s_pool, s_sc
     

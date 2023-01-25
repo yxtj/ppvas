@@ -2,7 +2,7 @@ import socket
 import torch
 import torch.nn as nn
 
-from model import util
+from system import util
 
 class Server():
     def __init__(self, socket: socket.socket, model: nn.Module, inshape: tuple):

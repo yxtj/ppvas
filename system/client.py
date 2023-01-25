@@ -3,8 +3,7 @@ import torch
 import torch.nn as nn
 from Pyfhel import Pyfhel
 
-from model import util
-# import layer
+from system import util
 
 class Client():
     def __init__(self, socket: socket.socket, model: nn.Module, inshape: tuple, he: Pyfhel):
