@@ -49,7 +49,7 @@ It requires the pooling stride to be no smaller than the pooling size. This is s
 
 ## Security
 
-This protocol guarantes the the security of the client's data, i.e. against a corrupted server.
+This protocol guarantes the security of the client's data, i.e. against a corrupted server.
 
 But it does not ensure the security of the server's network weights. 
 More specifically, it does not guarantees the security at the ReLU layer.
