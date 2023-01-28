@@ -23,13 +23,14 @@ class Server():
             name = lyr.__class__.__name__
             print('  offline {}: {}(inshape={}, outshape={}) ...'.format(i, name, lyr.ishape, lyr.oshape))
             # setup
+            m = 1.0 if i == last_non_local else None
             if i in self.shortcuts:
-                # assert isinstance(lyr, layer.shortcut.ShortCutServer)
+                # assert isinstance(lyr, layer.ShortCutServer)
                 idx = self.shortcuts[i]
                 m_other = self.layers[idx].mlast
             else:
                 m_other = None
-            lyr.setup(mlast, m_other=m_other, identity_m=(i==last_non_local))
+            lyr.setup(mlast, m, m_other=m_other)
             mlast = lyr.m
             # print("  m :", mlast)
             # offline

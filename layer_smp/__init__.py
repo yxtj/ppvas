@@ -1,11 +1,19 @@
-from . import base
-from . import conv
-from . import fc
-from . import relu
-from . import maxpool
-from . import avgpool
-from . import flatten
-from . import shortcut
-from . import softmax
-from . import identity
-from . import identity_local
+from layer_basic.stat import Stat
+
+# remote layers (linear)
+from .conv import *
+from .fc import *
+from .identity import *
+from .avgpool import *
+
+# remote layers (non-linear)
+from .maxpool import *
+from .shortcut import *
+
+# local layers (secure)
+from .relu import *
+from .flatten import *
+from .identity_local import *
+
+# local layers (non-encrypted at output)
+from .softmax import *

@@ -1,15 +1,14 @@
 from socket import socket
+from typing import Union
 import time
 import torch
 import numpy as np
 from Pyfhel import Pyfhel
 
 import comm.util
-from layer_basic.stat import Stat
+import layer_basic as lb
 
-__ADD_SHARE_RANGE__ = 10
-__MUL_SHARE_RANGE__ = 10
-__POSITIVE_EPS__ = 0.01
+__all__ = ['LayerCommon', 'LayerClient', 'LayerServer', 'LocalLayerClient', 'LocalLayerServer']
 
 
 class LayerCommon():
@@ -18,7 +17,7 @@ class LayerCommon():
         self.ishape = ishape
         self.oshape = oshape
         self.he = he
-        self.stat = Stat()
+        self.stat = lb.Stat()
     
     def send_plain(self, data:torch.Tensor) -> None:
         self.stat.byte_online_send += comm.util.send_torch(self.socket, data)
@@ -77,7 +76,7 @@ class LayerClient(LayerCommon):
         return data
     
     def set_r(self):
-        self.r = __ADD_SHARE_RANGE__*torch.rand(self.ishape) - __ADD_SHARE_RANGE__/2 # [-5, 5)
+        self.r = lb.gen_add_share(self.ishape)
         # self.r = torch.zeros(self.ishape)
         # self.r = torch.zeros(self.ishape) + np.random.randint(1, 6)*0.1
     
@@ -95,23 +94,31 @@ class LayerServer(LayerCommon):
         self.mlast = None
         self.m = None
     
-    def setup(self, mlast:torch.Tensor, *, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
+    def setup(self, m_last: Union[torch.Tensor, float, int],
+              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         '''
         Setup the layer's factors "mlast" and "m". In special cases, mlast may be a constant like 1.
         "m" should be setup IN DERIVED CLASSES.
-        For some layers, special parameter "m_other" and "identity_m" can be used in derived classes.
-        1. "m_other" is used for shortcut connection.
-        2. "identity_m" is used for the last non-local layer, which is prepared for output.
+        For some layers, some parameters in kwargs is used.
+        1. "m_other" is used in shortcut layers (compute x_{i-1} + x_j), to set up the "mlast" for the layer j.
         '''
-        if isinstance(mlast, (int, float)):
-            mlast = torch.zeros(self.ishape) + mlast
+        # set m for last layer
+        if isinstance(m_last, (int, float)):
+            m_last = torch.zeros(self.ishape) + m_last
         else:
-            assert mlast.shape == self.ishape
-        self.mlast = mlast
-        if identity_m:
-            self.set_m_one()
-        # otherwise, set m in the derived class
-        # use m_other for shortcut connection in the derived class
+            assert m_last.shape == self.ishape
+        self.mlast = m_last
+        # set m for this layer
+        if m is None:
+            self.set_m_positive()
+        else:
+            if isinstance(m, (int, float)):
+                self.m = torch.zeros(self.oshape) + m
+            elif isinstance(m, torch.Tensor):
+                assert m.shape == self.oshape
+                self.m = m
+            else:
+                raise TypeError("m should be a number or a tensor")
     
     def offline(self) -> torch.Tensor:
         raise NotImplementedError
@@ -128,17 +135,9 @@ class LayerServer(LayerCommon):
 
     def set_m_one(self) -> None:
         self.m = torch.ones(self.oshape)
-
-    def set_m_any(self) -> None:
-        t = __MUL_SHARE_RANGE__*torch.rand(self.oshape)
-        f = t < __POSITIVE_EPS__
-        t[f] += __POSITIVE_EPS__
-        self.m = t # [-5, -eps) U (eps, 5)
-        # self.m = torch.ones(self.oshape)
     
     def set_m_positive(self) -> None:
-        t = __MUL_SHARE_RANGE__*torch.rand(self.oshape) + __POSITIVE_EPS__ # avoid zero
-        self.m = t # [eps, 10+eps)
+        self.m = lb.gen_mul_share(self.oshape)
         # self.m = torch.ones(self.oshape)
     
     def construct_mul_share(self, data, m = None):
@@ -175,12 +174,6 @@ class LocalLayerClient(LayerClient):
 class LocalLayerServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         super().__init__(socket, ishape, oshape, layer)
-    
-    def setup(self, mlast: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
-        assert m_other is None
-        assert not identity_m
-        super().setup(mlast, m_other=m_other, identity_m=identity_m)
-        self.m = mlast
     
     def offline(self) -> None:
         return

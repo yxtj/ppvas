@@ -4,27 +4,26 @@ import torch
 import socket
 from Pyfhel import Pyfhel
 
-import system
-from system import util
-from layer_basic.stat import Stat
+from system import util, Server, Client
 
-def show_stat_one(promot:str, s:Stat, n:int):
-    print("{}: offline time (s): {:.3f}, send (kB): {:.3f}, recv (kB): {:.3f}; "
-          "online time (s): {:.3f}, send (kB): {:.3f}, recv (kB): {:.3f}".format(
-              promot, s.time_offline, s.byte_offline_send/1000, s.byte_offline_recv/1000,
-              s.time_online/n, s.byte_online_send/n/1000, s.byte_online_recv/n/1000,
-        ))
 
 def show_stat(layers, n):
     s_total, s_relu, s_linear, s_l_conv, s_l_fc, s_pool, s_sc = util.analyze_stat(layers, n)
     print()
-    show_stat_one("Total", s_total, n)
-    show_stat_one("  ReLU", s_relu, n)
-    show_stat_one("  Linear", s_linear, n)
-    show_stat_one("  Linear-Conv", s_l_conv, n)
-    show_stat_one("  Linear-FC", s_l_fc, n)
-    show_stat_one("  Shortcut", s_sc, n)
-    show_stat_one("  Pool", s_pool, n)
+    # show_stat_one("Total", s_total, n)
+    # show_stat_one("  ReLU", s_relu, n)
+    # show_stat_one("  Linear", s_linear, n)
+    # show_stat_one("  Linear-Conv", s_l_conv, n)
+    # show_stat_one("  Linear-FC", s_l_fc, n)
+    # show_stat_one("  Shortcut", s_sc, n)
+    # show_stat_one("  Pool", s_pool, n)
+    s_total.show("Total", n)
+    s_relu.show("  ReLU", n)
+    s_linear.show("  Linear", n)
+    s_l_conv.show("  Linear-Conv", n)
+    s_l_fc.show("  Linear-FC", n)
+    s_sc.show("  Shortcut", n)
+    s_pool.show("  Pool", n)
 
 
 def run_server(host: str, port: int, model: torch.nn.Module, inshape: tuple, n: int):
@@ -35,7 +34,7 @@ def run_server(host: str, port: int, model: torch.nn.Module, inshape: tuple, n: 
     print("Client connected from: {}".format(addr))
     # initialize server
     t0 = time.time()
-    server = system.Server(conn, model, inshape)
+    server = Server(conn, model, inshape)
     print("Server is ready")
     # offline phase
     server.offline()
@@ -61,7 +60,7 @@ def run_client(host: str, port: int, model: torch.nn.Module, inshape: tuple, he:
     print("Client is connecting to {}:{}".format(host, port))
     # initialize client
     t0 = time.time()
-    client = system.Client(s, model, inshape, he)
+    client = Client(s, model, inshape, he)
     print("Client is ready")
     # offline phase
     client.offline()
@@ -77,8 +76,9 @@ def run_client(host: str, port: int, model: torch.nn.Module, inshape: tuple, he:
         if verify:
             with torch.no_grad():
                 res2 = model(d)
+            diff = torch.abs(res - res2)
             print("Verify {}: mean absolute difference: {:.6g}, mean relative difference: {:.6g}".format(
-                i, torch.abs(res - res2).mean(), torch.nanmean(torch.abs(res - res2)/res2)))
+                i, diff.mean(), torch.nanmean(diff/res2)))
     t2 = time.time()
     s.close()
     # finish

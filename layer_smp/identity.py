@@ -1,6 +1,7 @@
 from .base import LayerClient, LayerServer
 
 from socket import socket
+from typing import Union
 import time
 import torch
 import torch.nn as nn
@@ -11,17 +12,16 @@ class IdentityClient(LayerClient):
         super().__init__(socket, ishape, oshape, he)
         self.layer = nn.ReLU()
     
-    
+
 class IdentityServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
         assert isinstance(layer, nn.Identity)
         super().__init__(socket, ishape, oshape, layer)
     
-    def setup(self, m_last: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
-        super().setup(m_last, m_other=m_other, identity_m=identity_m)
+    def setup(self, m_last: Union[torch.Tensor, float, int],
+              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        if not identity_m:
-            self.set_m_positive()
+        super().setup(m_last, m)
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> torch.Tensor:
@@ -41,4 +41,3 @@ class IdentityServer(LayerServer):
         self.send_plain(data)
         self.stat.time_online += time.time() - t
         return xmr_i
-                   

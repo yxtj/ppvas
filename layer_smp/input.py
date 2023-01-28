@@ -7,24 +7,21 @@ import torch
 import torch.nn as nn
 from Pyfhel import Pyfhel
 
-class ReLUClient(LocalLayerClient):
+class InputClient(LocalLayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         super().__init__(socket, ishape, oshape, he)
-        self.layer = nn.ReLU()
     
-    def online(self, xm) -> torch.Tensor:
-        t = time.time()
-        data = self.layer(xm)
-        self.stat.time_online += time.time() - t
-        return data
+    def online(self, x) -> torch.Tensor:
+        return x
     
-class ReLUServer(LocalLayerServer):
+class InputServer(LocalLayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
-        assert isinstance(layer, nn.ReLU)
+        assert isinstance(layer, nn.Identity)
         super().__init__(socket, ishape, oshape, layer)
-        
+
     def setup(self, m_last: Union[torch.Tensor, float, int],
               m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        super().setup(m_last, m_last)
+        super().setup(m_last, m)
         self.stat.time_offline += time.time() - t
+        

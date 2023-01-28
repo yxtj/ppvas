@@ -1,6 +1,7 @@
 from .base import LayerClient, LayerServer
 
 from socket import socket
+from typing import Union
 import time
 import torch
 import torch.nn as nn
@@ -49,16 +50,12 @@ class MaxPoolServer(LayerServer):
         
         super().__init__(socket, ishape, oshape, layer)
         self.stride_shape = stride_shape
+        self.mp = None
     
-    def setup(self, mlast: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
-        assert m_other is None
-        super().setup(mlast, m_other=m_other, identity_m=identity_m)
+    def setup(self, m_last: Union[torch.Tensor, float, int],
+              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        # set m
-        if not identity_m:
-            self.set_m_positive()
-        # self.m = torch.ones(oshape)
-        # print("m", self.m)
+        super().setup(m_last, m)
         # set mp
         block = torch.ones(self.stride_shape)
         self.mp = torch.kron(self.m, block) # kronecker product

@@ -1,6 +1,8 @@
+from typing import Union
 from .base import LayerClient, LayerServer
 
 from socket import socket
+from typing import Union
 import time
 import torch
 import torch.nn as nn
@@ -18,12 +20,10 @@ class AvgPoolServer(LayerServer):
         assert isinstance(layer, nn.AvgPool2d)
         super().__init__(socket, ishape, oshape, layer)
     
-    def setup(self, mlast:torch.Tensor, *, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
-        assert m_other is None
-        super().setup(mlast, m_other=m_other, identity_m=identity_m)
+    def setup(self, m_last: Union[torch.Tensor, float, int],
+              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        if not identity_m:
-            self.set_m_any()
+        super().setup(m_last, m)
         self.stat.time_offline += time.time() - t
         
     def offline(self) -> torch.Tensor:

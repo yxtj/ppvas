@@ -1,6 +1,7 @@
 from .base import LocalLayerClient, LocalLayerServer
 
 from socket import socket
+from typing import Union
 import time
 import torch
 import torch.nn as nn
@@ -23,8 +24,11 @@ class FlattenServer(LocalLayerServer):
         assert isinstance(layer, nn.Flatten)
         super().__init__(socket, ishape, oshape, layer)
         
-    def setup(self, mlast: torch.Tensor, m_other:torch.Tensor=None, identity_m:bool=False) -> None:
-        super().setup(mlast, m_other=m_other, identity_m=identity_m)
-        self.m = self.layer(mlast)
+    def setup(self, m_last: Union[torch.Tensor, float, int],
+              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+        t = time.time()
+        m = self.layer(m_last)
+        super().setup(m_last, m)
+        self.stat.time_offline += time.time() - t
         
     
