@@ -5,10 +5,10 @@ import torch
 import numpy as np
 from Pyfhel import Pyfhel
 
-import comm.util
+import comm
 import layer_basic as lb
 
-__all__ = ['LayerCommon', 'LayerClient', 'LayerServer', 'LocalLayerClient', 'LocalLayerServer']
+__all__ = ['LayerClient', 'LayerServer', 'LocalLayerClient', 'LocalLayerServer']
 
 
 class LayerCommon():
@@ -20,26 +20,26 @@ class LayerCommon():
         self.stat = lb.Stat()
     
     def send_plain(self, data:torch.Tensor) -> None:
-        self.stat.byte_online_send += comm.util.send_torch(self.socket, data)
+        self.stat.byte_online_send += comm.send_torch(self.socket, data)
     
     def recv_plain(self) -> torch.Tensor:
-        data, nbyte = comm.util.recv_torch(self.socket)
+        data, nbyte = comm.recv_torch(self.socket)
         self.stat.byte_online_recv += nbyte
         return data
 
     def send_he(self, data:np.ndarray) -> None:
         # simulate with plain
-        self.stat.byte_offline_send += comm.util.send_torch(self.socket, data)
+        self.stat.byte_offline_send += comm.send_torch(self.socket, data)
         # actual send with HE
-        # self.stat.byte_offline_send += comm.util.send_he_matrix(self.socket, data, self.he)
+        # self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
     
     def recv_he(self) -> np.ndarray:
         # simulate with plain
-        data, nbyte = comm.util.recv_torch(self.socket)
+        data, nbyte = comm.recv_torch(self.socket)
         self.stat.byte_offline_recv += nbyte
         return data
         # actual send with HE
-        data, nbytes = comm.util.recv_he_matrix(self.socket, self.he)
+        data, nbytes = comm.recv_he_matrix(self.socket, self.he)
         self.stat.byte_offline_recv += nbytes
         return data
 

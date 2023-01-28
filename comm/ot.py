@@ -2,7 +2,7 @@ from .rsa import RSA
 from socket import socket
 import struct
 import Crypto.Util.strxor
-from .util import send_chunk, recv_chunk
+from .basic import send_chunk, recv_chunk
 
 '''
 1-of-2 Oblivious Transfer Protocol.
