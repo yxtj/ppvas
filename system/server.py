@@ -12,6 +12,8 @@ class Server():
         self.inshape = inshape
         # layers
         self.layers, self.linears, self.shortcuts, self.locals = util.make_server_model(socket, model, inshape)
+        print("Model loaded {} layers: {} linear layers, {} local layers, {} shortcut layers.".format(
+            len(self.layers), len(self.linears), len(self.locals), len(self.shortcuts)))
         # for shortcut layer
         self.to_buffer = [v for k,v in self.shortcuts.items()]
     
