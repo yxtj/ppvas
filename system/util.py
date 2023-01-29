@@ -43,7 +43,13 @@ def make_client_model(socket, model, inshape, he):
             locals.append(i)
         elif isinstance(lyr, te.ShortCut):
             layers.append(layer.ShortCutClient(socket, shapes[i], shapes[i+1], he))
-            scl[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
+            idx = i + lyr.otherlayer # lyr.otherlayer is a negative index
+            assert isinstance(model[idx], layer.LocalLayerClient),\
+                "Shortcut input should not be a local layer. Checking the model or adding an identity layer."
+            scl[i] = idx
+        elif isinstance(lyr, nn.Identity):
+            layers.append(layer.IdentityClient(socket, shapes[i], shapes[i+1], he))
+            linears.append(i)
         elif isinstance(lyr, nn.Softmax):
             assert i == len(model) - 1, "Softmax should be the last layer."
             layers.append(layer.SoftmaxClient(socket, shapes[i], shapes[i+1], he))
@@ -86,7 +92,13 @@ def make_server_model(socket, model, inshape):
             locals.append(i)
         elif isinstance(lyr, te.ShortCut):
             layers.append(layer.ShortCutServer(socket, shapes[i], shapes[i+1], lyr))
-            scl[i] = i + lyr.otherlayer # lyr.otherlayer is a negative index
+            idx = i + lyr.otherlayer # lyr.otherlayer is a negative index
+            assert isinstance(model[idx], layer.LocalLayerServer),\
+                "Shortcut input should not be a local layer. Checking the model or adding an identity layer."
+            scl[i] = idx
+        elif isinstance(lyr, nn.Identity):
+            layers.append(layer.IdentityServer(socket, shapes[i], shapes[i+1], lyr))
+            linears.append(i)
         elif isinstance(lyr, nn.Softmax):
             assert i == len(model) - 1, "Softmax should be the last layer."
             layers.append(layer.SoftmaxServer(socket, shapes[i], shapes[i+1], lyr))

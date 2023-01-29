@@ -13,7 +13,6 @@ from .shortcut import *
 # local layers (secure)
 from .relu import *
 from .flatten import *
-from .identity_local import *
 
 # local layers (non-encrypted at output)
 from .softmax import *

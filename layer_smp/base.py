@@ -98,8 +98,8 @@ class LayerServer(LayerCommon):
               m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         '''
         Setup the layer's factors "mlast" and "m". In special cases, mlast may be a constant like 1.
-        "m" should be setup IN DERIVED CLASSES.
-        For some layers, some parameters in kwargs is used.
+        If m is not given (either a tensor or a value), m will be set randomly.
+        For some layers, parameters in kwargs can be used in derivide.
         1. "m_other" is used in shortcut layers (compute x_{i-1} + x_j), to set up the "mlast" for the layer j.
         '''
         # set m for last layer
