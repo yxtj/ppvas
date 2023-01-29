@@ -11,16 +11,17 @@ import system
 if __name__ == '__main__':
     argv = sys.argv
     if len(argv) < 3:
-        print('Usage: python model server|client [seed=0] [host=localhost] [port=8100]')
+        print('Usage: python server|client model [seed=None] [host=localhost] [port=8100]')
         sys.exit(1)
-    model_name = argv[1]
-    mode = argv[2]
+    mode = argv[1]
     assert mode in ['server', 'client']
-    seed = int(argv[3]) if len(argv) > 3 else 0
+    model_name = argv[2]
+    seed = int(argv[3]) if len(argv) > 3 else None
     host = argv[4] if len(argv) > 4 else 'localhost'
     port = int(argv[5]) if len(argv) > 5 else 8100
     
-    torch.manual_seed(seed)
+    if seed is not None:
+        torch.manual_seed(seed)
     
     # set model and inshape
     if model_name in poc.map:
