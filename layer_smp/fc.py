@@ -19,8 +19,6 @@ class FcServer(LayerServer):
     def setup(self, m_last: Union[torch.Tensor, float, int],
               m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        print("fc: m_last", m_last.flatten()[0] if m_last is not None else None,
-              "m:", m.flatten()[0] if m_last is isinstance(m, torch.Tensor) else m)
         super().setup(m_last, m)
         self.stat.time_offline += time.time() - t
     
