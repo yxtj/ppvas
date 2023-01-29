@@ -44,7 +44,7 @@ def make_client_model(socket, model, inshape, he):
         elif isinstance(lyr, te.ShortCut):
             layers.append(layer.ShortCutClient(socket, shapes[i], shapes[i+1], he))
             idx = i + lyr.otherlayer # lyr.otherlayer is a negative index
-            assert isinstance(model[idx], layer.LocalLayerClient),\
+            assert not isinstance(model[idx], layer.LocalLayerClient),\
                 "Shortcut input should not be a local layer. Checking the model or adding an identity layer."
             scl[i] = idx
         elif isinstance(lyr, nn.Identity):
@@ -93,7 +93,7 @@ def make_server_model(socket, model, inshape):
         elif isinstance(lyr, te.ShortCut):
             layers.append(layer.ShortCutServer(socket, shapes[i], shapes[i+1], lyr))
             idx = i + lyr.otherlayer # lyr.otherlayer is a negative index
-            assert isinstance(model[idx], layer.LocalLayerServer),\
+            assert not isinstance(model[idx], layer.LocalLayerServer),\
                 "Shortcut input should not be a local layer. Checking the model or adding an identity layer."
             scl[i] = idx
         elif isinstance(lyr, nn.Identity):
