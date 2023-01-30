@@ -3,8 +3,14 @@ import torch.nn as nn
 import torch_extension.shortcut as te
 
 from layer_basic.stat import Stat
-import layer_smp as layer
 
+
+from setting import PROTOCOL
+if PROTOCOL == 'dual':
+    import layer_dual as layer
+else:
+    import layer_smp as layer
+    
 
 def compute_shape(model, inshape):
     if len(inshape) == 3:

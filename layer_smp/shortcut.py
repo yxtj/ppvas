@@ -12,11 +12,11 @@ class ShortCutClient(LayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         assert ishape == oshape
         super().__init__(socket, ishape, oshape, he)
-        self.rj = None
+        # self.rj = None
     
-    def setup(self, r_other: torch.Tensor) -> None:
+    def setup(self, r_other: torch.Tensor, **kwargs) -> None:
         assert self.ishape == r_other.shape
-        self.rj = r_other
+        # self.rj = r_other
     
 class ShortCutServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
