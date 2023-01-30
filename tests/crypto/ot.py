@@ -15,7 +15,7 @@ def run_server(nbits, msg_len, n):
     sock = socket.create_server(('localhost', 12345))
     conn, addr = sock.accept()
     print(prefix, 'connection from', addr)
-    server = ot.ObliviousTransferServer(conn, nbits)
+    server = ot.ObliviousTransferReceiver(conn, nbits)
     print(prefix, "setup")
     server.setup()
     for i in range(n):
@@ -34,7 +34,7 @@ def run_client(nbits, msg_len, n):
     prefix = '[Client]'
     sock = socket.create_connection(('localhost', 12345))
     print(prefix, "connected to server")
-    client = ot.ObliviousTransferClient(sock, nbits)
+    client = ot.ObliviousTransferSender(sock, nbits)
     print(prefix, "setup")
     client.setup()
     m0= b'THIS IS MESSAGE ONE.'

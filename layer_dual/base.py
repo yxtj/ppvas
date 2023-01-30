@@ -56,7 +56,7 @@ class LayerClient(LayerCommon):
         super().__init__(socket, ishape, oshape, he)
         self.r = None # a tensor
         self.pre = None # a tensor dual
-        self.otc = None # oblivious transfer client
+        self.ots = None # oblivious transfer sender
         self.is_input_layer = False
         self.is_output_layer = False
     
@@ -77,8 +77,8 @@ class LayerClient(LayerCommon):
         else:
             assert isinstance(kwargs['ot_nbits'], int)
             nbits = kwargs['ot_nbits']
-        self.otc = comm.ObliviousTransferClient(self.socket, nbits)
-        self.otc.setup()
+        self.ots = comm.ObliviousTransferSender(self.socket, nbits)
+        self.ots.setup()
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> None:
@@ -122,7 +122,7 @@ class LayerClient(LayerCommon):
     def send_online(self, xma, xmb):
         # construct additive share -> send with OT
         xmar, xmbr = self.construct_add_share(xma, xmb) # x_i m_{i-1} - r_i
-        ns, nr = self.otc.run_customized(xmar, xmbr, self.ot_callback)
+        ns, nr = self.ots.run_customized(xmar, xmbr, self.ot_callback)
         self.stat.byte_online_send += ns
         self.stat.byte_online_recv += nr
     
@@ -154,7 +154,7 @@ class LayerServer(LayerCommon):
         #self.m_neg = None
         self.h = None # binary mask
         self.ma, self.mb = None, None
-        self.ots = None # oblivious transfer server
+        self.otr = None # oblivious transfer receiver
     
     def setup(self, last_lyr: LayerCommon, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         '''
@@ -211,8 +211,8 @@ class LayerServer(LayerCommon):
         else:
             assert isinstance(kwargs['ot_nbits'], int)
             nbits = kwargs['ot_nbits']
-        self.ots = comm.ObliviousTransferServer(self.socket, nbits)
-        self.ots.setup()
+        self.otr = comm.ObliviousTransferReceiver(self.socket, nbits)
+        self.otr.setup()
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> np.ndarray:
@@ -247,7 +247,7 @@ class LayerServer(LayerCommon):
         # receive multiplicative share with OT -> reconstruct
         # TODO: use a bit serializer
         h_bytes = self.hlast.numpy().tobytes()
-        data, ns, nr = self.ots.run_customized(h_bytes) # x_i m_{i-1} - r_i
+        data, ns, nr = self.otr.run_customized(h_bytes) # x_i m_{i-1} - r_i
         data = comm.deserialize_torch(data)
         data = self.reconstruct_mul_data(data) # x_i - r_i/m_{i-1}
         self.stat.byte_online_send += ns

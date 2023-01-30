@@ -23,7 +23,7 @@ def run_server(nbits, m0, m1, n):
     sock = socket.create_server((host, port))
     conn, addr = sock.accept()
     print(f"{prefix} connection from {addr}")
-    server = ot.ObliviousTransferServer(conn, nbits)
+    server = ot.ObliviousTransferReceiver(conn, nbits)
     print(f"{prefix} setup")
     server.setup()
     for i in range(n):
@@ -44,7 +44,7 @@ def run_client(nbits, m0, m1, n):
     prefix = '[Client]'
     sock = socket.create_connection((host, port))
     print(f"{prefix} connected to server")
-    client = ot.ObliviousTransferClient(sock, nbits)
+    client = ot.ObliviousTransferSender(sock, nbits)
     print(f"{prefix} setup")
     print(f"{prefix} data shape: {m0.shape}")
     client.setup()

@@ -7,7 +7,7 @@ from .basic import send_chunk, recv_chunk
 '''
 1-of-2 Oblivious Transfer Protocol.
 
-          Client                                Server
+          Sender                                Receiver
 have data: m0, m1                have: b (0/1) indicating which data to require
 
 # RSA setup phase (only once)
@@ -32,7 +32,7 @@ send: m0' = m0 XOR h0           =>          receive: m0'
 '''
 A general 1-of-2 OT protocol using an indicator function.
 
-          Client                                Server
+          Sender                                Receiver
 have data: m0, m1                       have: indicator i
 have data function: f(m0, m1, i)      have: selector function: b = f(i)
 
@@ -77,7 +77,7 @@ def mask_data(data_bytes:bytes, mask:bytes) -> bytes:
     return b''.join(buffer)
 
 
-class ObliviousTransferClient():
+class ObliviousTransferSender():
     def __init__(self, socket:socket, nbits:int=2048) -> None:
         self.socket = socket
         self.nbits = nbits
@@ -166,7 +166,7 @@ class ObliviousTransferClient():
         indicator, n = recv_chunk(self.socket)
         return c, indicator, self.nbyte + n
 
-class ObliviousTransferServer():
+class ObliviousTransferReceiver():
     def __init__(self, socket:socket, nbits:int=2048) -> None:
         self.socket = socket
         self.nbits = nbits
