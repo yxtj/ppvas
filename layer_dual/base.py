@@ -72,13 +72,14 @@ class LayerClient(LayerCommon):
             assert isinstance(kwargs['is_output_layer'], bool)
             self.is_output_layer = kwargs['is_output_layer']
         # set oblivious transfer
-        if 'ot_nbits' not in kwargs:
-            nbits = 1024
-        else:
-            assert isinstance(kwargs['ot_nbits'], int)
-            nbits = kwargs['ot_nbits']
-        self.ots = comm.ObliviousTransferSender(self.socket, nbits)
-        self.ots.setup()
+        if not isinstance(self, LocalLayerClient):
+            if 'ot_nbits' not in kwargs:
+                nbits = 1024
+            else:
+                assert isinstance(kwargs['ot_nbits'], int)
+                nbits = kwargs['ot_nbits']
+            self.ots = comm.ObliviousTransferSender(self.socket, nbits)
+            self.ots.setup()
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> None:
@@ -206,13 +207,14 @@ class LayerServer(LayerCommon):
         else:
             raise TypeError("m should be a number or a tensor")
         # set oblivious transfer
-        if 'ot_nbits' not in kwargs:
-            nbits = 1024
-        else:
-            assert isinstance(kwargs['ot_nbits'], int)
-            nbits = kwargs['ot_nbits']
-        self.otr = comm.ObliviousTransferReceiver(self.socket, nbits)
-        self.otr.setup()
+        if not isinstance(self, LocalLayerServer):
+            if 'ot_nbits' not in kwargs:
+                nbits = 1024
+            else:
+                assert isinstance(kwargs['ot_nbits'], int)
+                nbits = kwargs['ot_nbits']
+            self.otr = comm.ObliviousTransferReceiver(self.socket, nbits)
+            self.otr.setup()
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> np.ndarray:
