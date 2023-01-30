@@ -115,6 +115,9 @@ show_group_bar(act_time[1:], act_name[1:], 'Execute time (s)', 0.8, True, True)
 plt.ylim(None, 100)
 plt.text(-0.2, 0.008, '0', fontsize=plt.rcParams['font.size']-2)
 
+plt.ylim(None, 150)
+plt.text(-0.2, 0.002, '0', fontsize=plt.rcParams['font.size']-2)
+
 # communication
 
 # show_stack_bar(act_comm, act_name, ylbl_tomm, 0.7, False)
@@ -128,6 +131,7 @@ plt.ylim(None, 15)
 show_group_bar(act_comm[1:], act_name[1:], 'Data transferred (MB)', 0.8, True, True)
 plt.ylim(None, 15)
 plt.text(-0.2, 0.0017, '0', fontsize=plt.rcParams['font.size']-2)
+plt.text(0.2, 0.0017, '0', fontsize=plt.rcParams['font.size']-2)
 
 # %% draw for pooling
 
