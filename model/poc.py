@@ -13,6 +13,27 @@ Poc0Model_l = nn.Sequential(
 )
 map["0-linear"] = (Poc0Inshape_l, Poc0Model_l)
 
+Poc0Model_l2 = nn.Sequential(
+    nn.Linear(6, 3),
+    nn.Linear(3, 2),
+)
+map["0-l2"] = (Poc0Inshape_l, Poc0Model_l2)
+
+Poc0Model_l3 = nn.Sequential(
+    nn.Linear(6, 3),
+    nn.ReLU(),
+    nn.Linear(3, 2),
+)
+map["0-l3"] = (Poc0Inshape_l, Poc0Model_l3)
+
+Poc0Model_l4 = nn.Sequential(
+    nn.Linear(6, 5),
+    nn.Linear(5, 4),
+    nn.Linear(4, 3),
+    nn.Linear(3, 2),
+)
+map["0-l4"] = (Poc0Inshape_l, Poc0Model_l4)
+
 # Model 0 pool:
 # Shape: 1x6x6 -> 1x2x2 -> 4 -> 2
 
