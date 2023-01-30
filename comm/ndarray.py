@@ -27,6 +27,16 @@ def deserialize_numpy_meta(data:bytes) -> tuple[int, int, str, tuple[int]]:
     shape = deserialize_numpy_meta_phase2(data[7:header_len], shape_len)
     return header_len, nbytes, type_char, shape
 
+
+def serialize_numpy(data:np.ndarray) -> bytes:
+    return serialize_numpy_meta(data) + data.tobytes()
+
+def deserialize_numpy(data:bytes) -> np.ndarray:
+    header_len, nbytes, type_char, shape = deserialize_numpy_meta(data)
+    buffer = data[header_len:header_len+nbytes]
+    result = np.frombuffer(buffer, dtype=type_char).reshape(shape)
+    return result
+
 # numpy
     
 def send_numpy(s:socket.socket, data:np.ndarray) -> int:
