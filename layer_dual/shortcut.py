@@ -12,12 +12,10 @@ class ShortCutClient(LayerClient):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, he:Pyfhel) -> None:
         assert ishape == oshape
         super().__init__(socket, ishape, oshape, he)
-        # self.rj = None
     
     def setup(self, r_other: torch.Tensor, **kwargs) -> None:
         super().setup()
         assert self.ishape == r_other.shape
-        # self.rj = r_other
     
 class ShortCutServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
@@ -25,18 +23,6 @@ class ShortCutServer(LayerServer):
         assert ishape == oshape
         super().__init__(socket, ishape, oshape, layer)
         self.other_offset = layer.otherlayer
-        # self.mj = None
-    
-    # def setup(self, last_lyr: LayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
-    #     assert 'other_lyr' in kwargs, 'other_lyr is not provided'
-    #     super().setup(last_lyr, m)
-    #     t = time.time()
-    #     m_other = kwargs['other_lyr']
-    #     assert isinstance(m_other, torch.Tensor)
-    #     assert self.ishape == m_other.shape
-    #     self.mj = m_other
-    #     self.stat.time_offline += time.time() - t
-    #     # print("shortcut setup: mi={}, mj={}, m={}".format(self.mlast, self.mj, self.m))
     
     def offline(self, rm_j) -> torch.Tensor:
         t = time.time()
@@ -45,7 +31,7 @@ class ShortCutServer(LayerServer):
         self.send_offline(data)
         self.stat.time_offline += time.time() - t
         return rm_i
-        
+    
     def online(self, xmr_j) -> torch.Tensor:
         t = time.time()
         xrm_i = self.recv_online() # x_i - r_i / m_{i-1}

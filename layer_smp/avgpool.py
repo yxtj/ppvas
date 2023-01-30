@@ -20,10 +20,9 @@ class AvgPoolServer(LayerServer):
         assert isinstance(layer, nn.AvgPool2d)
         super().__init__(socket, ishape, oshape, layer)
     
-    def setup(self, m_last: Union[torch.Tensor, float, int],
-              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+    def setup(self, last_lyr: LayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        super().setup(m_last, m)
+        super().setup(last_lyr, m)
         self.stat.time_offline += time.time() - t
         
     def offline(self) -> torch.Tensor:

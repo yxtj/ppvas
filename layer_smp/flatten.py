@@ -24,11 +24,10 @@ class FlattenServer(LocalLayerServer):
         assert isinstance(layer, nn.Flatten)
         super().__init__(socket, ishape, oshape, layer)
         
-    def setup(self, m_last: Union[torch.Tensor, float, int],
-              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+    def setup(self, last_lyr: LocalLayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        m = self.layer(m_last)
-        super().setup(m_last, m)
+        m = self.layer(last_lyr.m)
+        super().setup(last_lyr, m)
         self.stat.time_offline += time.time() - t
         
     

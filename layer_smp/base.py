@@ -94,8 +94,7 @@ class LayerServer(LayerCommon):
         self.mlast = None
         self.m = None
     
-    def setup(self, m_last: Union[torch.Tensor, float, int],
-              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+    def setup(self, last_lyr: LayerCommon, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         '''
         Setup the layer's factors "mlast" and "m". In special cases, mlast may be a constant like 1.
         If m is not given (either a tensor or a value), m will be set randomly.
@@ -103,11 +102,11 @@ class LayerServer(LayerCommon):
         1. "m_other" is used in shortcut layers (compute x_{i-1} + x_j), to set up the "mlast" for the layer j.
         '''
         # set m for last layer
-        if isinstance(m_last, (int, float)):
-            m_last = torch.zeros(self.ishape) + m_last
+        if last_lyr is None:
+            self.mlast = torch.ones(self.ishape)
         else:
-            assert m_last.shape == self.ishape
-        self.mlast = m_last
+            assert isinstance(last_lyr, LayerServer)
+            self.mlast = last_lyr.m
         # set m for this layer
         if m is None:
             self.set_m_positive()

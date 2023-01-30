@@ -24,9 +24,10 @@ class SoftmaxServer(LocalLayerServer):
         assert isinstance(layer, nn.Softmax)
         super().__init__(socket, ishape, oshape, layer)
     
-    def setup(self, m_last: Union[torch.Tensor, float, int],
-              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+    def setup(self, last_lyr: LocalLayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        super().setup(m_last, m_last)
+        # just copy the last layer's m
+        m = last_lyr.m
+        super().setup(last_lyr, m)
         self.stat.time_offline += time.time() - t
 

@@ -52,10 +52,9 @@ class MaxPoolServer(LayerServer):
         self.stride_shape = stride_shape
         self.mp = None
     
-    def setup(self, m_last: Union[torch.Tensor, float, int],
-              m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+    def setup(self, last_lyr: LayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        super().setup(m_last, m)
+        super().setup(last_lyr, m)
         # set mp
         block = torch.ones(self.stride_shape)
         self.mp = torch.kron(self.m, block) # kronecker product
