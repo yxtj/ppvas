@@ -19,7 +19,7 @@ class InputServer(LocalLayerServer):
         assert isinstance(layer, nn.Identity)
         super().__init__(socket, ishape, oshape, layer)
 
-    def setup(self, last_lyr: LayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
+    def setup(self, last_lyr: LocalLayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
         super().setup(last_lyr, m)
         self.stat.time_offline += time.time() - t

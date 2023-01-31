@@ -25,18 +25,18 @@ class IdentityServer(LayerServer):
     
     def offline(self) -> torch.Tensor:
         t = time.time()
-        r_i = self.recv_he() # r_i
-        data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
-        data = self.construct_mul_share(data) # r_i / m_{i-1} .* m_{i}
+        data = self.recv_he() # r_i
+        rm = self.reconstruct_mul_data(data) # r_i / m_{i-1}
+        data = self.construct_mul_share(rm) # r_i / m_{i-1} .* m_{i}
         self.send_he(data)
         self.stat.time_offline += time.time() - t
-        return r_i
+        return rm
     
     def online(self) -> torch.Tensor:
         t = time.time()
-        xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
-        data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
-        data = self.construct_mul_share(data) # (x_i - r_i / m_{i-1}) .* m_{i}
+        data = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
+        xrm = self.reconstruct_mul_data(data) # x_i - r_i / m_{i-1}
+        data = self.construct_mul_share(xrm) # (x_i - r_i / m_{i-1}) .* m_{i}
         self.send_plain(data)
         self.stat.time_online += time.time() - t
-        return xmr_i
+        return xrm

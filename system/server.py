@@ -26,15 +26,7 @@ class Server():
             print('  offline {}: {}(inshape={}, outshape={}) ...'.format(i, name, lyr.ishape, lyr.oshape))
             # setup
             m = 1.0 if i == last_non_local else None
-            # m = 1.0 if i == 0 else m
-            if i in self.shortcuts:
-                # assert isinstance(lyr, layer.ShortCutServer)
-                idx = self.shortcuts[i]
-                m_other = self.layers[idx].mlast
-            else:
-                m_other = None
-            # TODO: remove m_other for smp protocol
-            lyr.setup(last_lyr, m, m_other=m_other)
+            lyr.setup(last_lyr, m)
             last_lyr = lyr
             # print("  m :", mlast)
             # offline

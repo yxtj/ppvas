@@ -24,21 +24,21 @@ class ConvServer(LayerServer):
     
     def offline(self) -> torch.Tensor:
         t = time.time()
-        r_i = self.recv_he()
-        data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
-        data = self.run_layer_offline(data) # W_i * r_i / m_{i-1}
+        data = self.recv_he()
+        rm = self.reconstruct_mul_data(data) # r_i / m_{i-1}
+        data = self.run_layer_offline(rm) # W_i * r_i / m_{i-1}
         data = self.construct_mul_share(data) # W_i * r_i / m_{i-1} .* m_{i}
         self.send_he(data)
         self.stat.time_offline += time.time() - t
-        return r_i
+        return rm
         
     def online(self) -> torch.Tensor:
         t = time.time()
-        xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
-        data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
-        data = self.layer(data) # W_i * (x_i - r_i / m_{i-1})
+        data = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
+        xrm = self.reconstruct_mul_data(data) # x_i - r_i / m_{i-1}
+        data = self.layer(xrm) # W_i * (x_i - r_i / m_{i-1})
         data = self.construct_mul_share(data) # W_i * (x_i - r_i / m_{i-1}) .* m_{i}
         self.send_plain(data)
         self.stat.time_online += time.time() - t
-        return xmr_i
+        return xrm
 

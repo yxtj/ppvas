@@ -71,27 +71,27 @@ class MaxPoolServer(LayerServer):
     
     def offline(self) -> torch.Tensor:
         t = time.time()
-        r_i = self.recv_he() # r_i
+        data = self.recv_he() # r_i
         # print("r_i", r_i)
-        data = self.reconstruct_mul_data(r_i) # r_i / m_{i-1}
+        rm = self.reconstruct_mul_data(data) # r_i / m_{i-1}
         # print("r/m", data)
-        data = self.cut_input(data)
+        data = self.cut_input(rm)
         data = self.construct_mul_share(data, self.mp) # r_i / m_{i-1} .* m^p_{i}
         # print("r/m * mp", data)
         self.send_he(data)
         self.stat.time_offline += time.time() - t
-        return r_i
+        return rm
         
     def online(self) -> torch.Tensor:
         t = time.time()
-        xmr_i = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
+        data = self.recv_plain() # xmr_i = x_i * m_{i-1} - r_i
         # print("xmr_i", xmr_i)
-        data = self.reconstruct_mul_data(xmr_i) # x_i - r_i / m_{i-1}
+        xrm = self.reconstruct_mul_data(data) # x_i - r_i / m_{i-1}
         # print("x-r/m", data)
-        data = self.cut_input(data)
+        data = self.cut_input(xrm)
         data = self.construct_mul_share(data, self.mp) # (x_i - r_i / m_{i-1}) .* m^p_{i}
         # print("(x-r/m) * mp", data)
         self.send_plain(data)
         self.stat.time_online += time.time() - t
-        return xmr_i
+        return xrm
     
