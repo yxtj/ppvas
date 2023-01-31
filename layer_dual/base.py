@@ -1,54 +1,17 @@
 from socket import socket
 from typing import Union
-import numpy as np
 import time
 import torch
 import numpy as np
 from Pyfhel import Pyfhel
 
 import comm
-import layer_basic as lb
-
-from setting import USE_HE
+from layer_basic import LayerCommon, gen_add_share, gen_mul_share
 
 __all__ = ['LayerClient', 'LayerServer', 'LocalLayerClient', 'LocalLayerServer']
 
 def merge_by_h(A: torch.Tensor, B: torch.Tensor, H: torch.Tensor):
     return A * H + B * ~H
-
-class LayerCommon():
-    def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
-        self.socket = socket
-        self.ishape = ishape
-        self.oshape = oshape
-        self.he = he
-        self.stat = lb.Stat()
-    
-    # def send_plain(self, data:torch.Tensor) -> None:
-    #     self.stat.byte_online_send += comm.send_torch(self.socket, data)
-    
-    # def recv_plain(self) -> torch.Tensor:
-    #     data, nbyte = comm.recv_torch(self.socket)
-    #     self.stat.byte_online_recv += nbyte
-    #     return data
-
-    def send_he(self, data:np.ndarray) -> None:
-        if USE_HE:
-            # actual send with HE
-            self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
-        else:
-            # simulate with plain
-            self.stat.byte_offline_send += comm.send_torch(self.socket, data)
-    
-    def recv_he(self) -> np.ndarray:
-        if USE_HE:
-            # actual send with HE
-            data, nbytes = comm.recv_he_matrix(self.socket, self.he)
-        else:
-            # simulate with plain
-            data, nbytes = comm.recv_torch(self.socket)
-        self.stat.byte_offline_recv += nbytes
-        return data
 
 
 class LayerClient(LayerCommon):
@@ -129,14 +92,13 @@ class LayerClient(LayerCommon):
     
     def recv_online(self):
         # receive additive share -> reconstruct
-        xma, nr_a = comm.recv_torch(self.socket) # f(x_i - r_i/m_{i-1}) .* m_i
-        xmb, nr_b = comm.recv_torch(self.socket)
-        self.stat.byte_online_recv += nr_a + nr_b
+        xma = self.recv_plain() # f(x_i - r_i/m_{i-1}) .* m_i
+        xmb = self.recv_plain()
         xma, xmb = self.reconstruct_add_data(xma, xmb) # f(x_i) .* m_i
         return xma, xmb
     
     def set_r(self):
-        self.r = lb.gen_add_share(self.ishape)
+        self.r = gen_add_share(self.ishape)
         
     def construct_add_share(self, data_a, data_b):
         return data_a - self.r, data_b - self.r
@@ -180,8 +142,8 @@ class LayerServer(LayerCommon):
             self.hlast = last_lyr.h
         # set m and h for this layer
         if m is None:
-            self.m = lb.gen_mul_share(self.oshape)
-            m_neg = -lb.gen_mul_share(self.oshape)
+            self.m = gen_mul_share(self.oshape)
+            m_neg = -gen_mul_share(self.oshape)
             self.h = torch.randint(0, 2, self.oshape, dtype=torch.bool)
             self.ma = merge_by_h(self.m, m_neg, self.h)
             self.mb = merge_by_h(m_neg, self.m, self.h)
@@ -260,9 +222,8 @@ class LayerServer(LayerCommon):
         # construct multiplicative shares -> send
         xrma = self.construct_mul_share(xr, self.ma) # f(x_i - r_i/m_{i-1}) .* m_i
         xrmb = self.construct_mul_share(xr, self.mb)
-        ns_a = comm.send_torch(self.socket, xrma)
-        ns_b = comm.send_torch(self.socket, xrmb)
-        self.stat.byte_online_send += ns_a + ns_b
+        self.send_plain(xrma)
+        self.send_plain(xrmb)
     
     def construct_mul_share(self, data, m):
         '''

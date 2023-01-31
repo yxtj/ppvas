@@ -2,46 +2,14 @@ from socket import socket
 from typing import Union
 import time
 import torch
-import numpy as np
+# import numpy as np
 from Pyfhel import Pyfhel
 
-import comm
-import layer_basic as lb
+# import comm
+from layer_basic import LayerCommon, gen_add_share, gen_mul_share
 
 __all__ = ['LayerClient', 'LayerServer', 'LocalLayerClient', 'LocalLayerServer']
 
-
-class LayerCommon():
-    def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
-        self.socket = socket
-        self.ishape = ishape
-        self.oshape = oshape
-        self.he = he
-        self.stat = lb.Stat()
-    
-    def send_plain(self, data:torch.Tensor) -> None:
-        self.stat.byte_online_send += comm.send_torch(self.socket, data)
-    
-    def recv_plain(self) -> torch.Tensor:
-        data, nbyte = comm.recv_torch(self.socket)
-        self.stat.byte_online_recv += nbyte
-        return data
-
-    def send_he(self, data:np.ndarray) -> None:
-        # simulate with plain
-        self.stat.byte_offline_send += comm.send_torch(self.socket, data)
-        # actual send with HE
-        # self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
-    
-    def recv_he(self) -> np.ndarray:
-        # simulate with plain
-        data, nbyte = comm.recv_torch(self.socket)
-        self.stat.byte_offline_recv += nbyte
-        return data
-        # actual send with HE
-        data, nbytes = comm.recv_he_matrix(self.socket, self.he)
-        self.stat.byte_offline_recv += nbytes
-        return data
 
 class LayerClient(LayerCommon):
     def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
@@ -76,7 +44,7 @@ class LayerClient(LayerCommon):
         return data
     
     def set_r(self):
-        self.r = lb.gen_add_share(self.ishape)
+        self.r = gen_add_share(self.ishape)
         # self.r = torch.zeros(self.ishape)
         # self.r = torch.zeros(self.ishape) + np.random.randint(1, 6)*0.1
     
@@ -136,7 +104,7 @@ class LayerServer(LayerCommon):
         self.m = torch.ones(self.oshape)
     
     def set_m_positive(self) -> None:
-        self.m = lb.gen_mul_share(self.oshape)
+        self.m = gen_mul_share(self.oshape)
         # self.m = torch.ones(self.oshape)
     
     def construct_mul_share(self, data, m = None):
