@@ -79,7 +79,7 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     if len(args) < 2:
         print('Usage: python minionn.py <data_dir> <known_count> [nepoch] [epsilon] [lr] [bs] [device]')
-        print('  default nepoch=1000, epsilon=1e-9, lr=0.01, bs=1000, device=cpu')
+        print('  default nepoch=1000, epsilon=1e-9, lr=0.01, bs=1000, device=cuda')
         exit(0)
     data_dir = args[0]
     weight_path = 'pretrained/minionn.pt'
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     epsilon = float(args[3]) if len(args) > 3 else 1e-9
     learning_rate = float(args[4]) if len(args) > 4 else 0.01
     batch_size = int(args[5]) if len(args) > 5 else 1000
-    device = args[6] if len(args) > 6 else 'cpu'
+    device = args[6] if len(args) > 6 else 'cuda'
 
     last_idx = weight_path.rfind('.')
     fn = weight_path[weight_path.rfind('/')+1: last_idx if last_idx != -1 else len(weight_path)]
