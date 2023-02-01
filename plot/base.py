@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def setup():
+def setup(figsize=(4, 3), fontsize=12):
     plt.rcParams['font.family'] = ['sans-serif']
     plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica']
-    plt.rcParams['font.size'] = 12
-    plt.rcParams['figure.figsize'] = [4, 3]
+    plt.rcParams['font.size'] = fontsize
+    plt.rcParams['figure.figsize'] = figsize
 
 
 def load_acc(filename):
