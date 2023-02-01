@@ -158,8 +158,8 @@ if __name__ == '__main__':
         loss_record.append(running_loss)
         # compute difference with real model weights
         with torch.no_grad():
-            dw = ((m0_a.weight - w)/w).abs()
-            diff = dw.mean().item()
+            dw = (m0_a.weight - w)/w
+            diff = dw.mean().item().abs()
             # db = (m0_a.bias - b).abs()/b
             # diff = (dw + db)/n_param
         diff_record.append(dw.cpu().numpy().flatten())
@@ -171,6 +171,6 @@ if __name__ == '__main__':
         print(f'Epoch {i}: loss={running_loss:.6g}, impv={delta:.4g}, diff={diff:.4f}, time={t:.2f}, eta={eta:.2f}')
 
     fn = f'{fn}_{nepoch}'
-    np.savez(fn+"_record.npy", loss_record=loss_record, diff_record=diff_record, time_record=time_record)
+    np.savez(fn+"_record.npz", loss_record=loss_record, diff_record=diff_record, time_record=time_record)
     # torch.save(m_attack.state_dict(), fn+'_model.pt')
 
