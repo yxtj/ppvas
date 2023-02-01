@@ -95,3 +95,20 @@ def resnet110(version=3, residual=True):
 
 def resnet152(version=3, residual=True):
     return build_resnet([24, 24, 24], 100, version, residual)
+
+
+def build(depth, version=3, residual=True):
+    if depth == 20:
+        return resnet20(version, residual)
+    elif depth == 32:
+        return resnet32(version, residual)
+    elif depth == 44:
+        return resnet44(version, residual)
+    elif depth == 56:
+        return resnet56(version, residual)
+    elif depth == 110:
+        return resnet110(version, residual)
+    elif depth == 152:
+        return resnet152(version, residual)
+    else:
+        raise ValueError("depth must be 20, 32, 44, 56, 110, or 152")

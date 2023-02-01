@@ -10,28 +10,32 @@ import ml.util as util
 if __name__ == '__main__':
     argv = sys.argv[1:]
     if len(argv) == 0:
-        print("Usage: python resnet.py data_dir chkpt_dir epochs batch_size dump_interval lr device model_version")
+        print("Usage: python resnet.py data_dir chkpt_dir [epochs] [dump_interval] [bs] [lr] [device] [model_version]")
+        print("  default epochs: 100, dump_interval: 10, bs: 512, lr: 0.001, device: cuda, model_version: 32-3")
+        print("  model_version: <depth>-<version>[d], where depth is 20, 32, 40; version is 1, 2, 3, 4; 'd' indicates direct/residual")
         sys.exit(1)
     data_dir = argv[0] # 'E:/Data/CIFAR100'
     chkpt_dir = argv[1] # 'pretrained/'
     epochs = int(argv[2]) if len(argv) > 2 else 100
-    batch_size = int(argv[3]) if len(argv) > 3 else 512
-    dump_interval = int(argv[4]) if len(argv) > 4 else 10
-    lr = float(argv[5]) if len(argv) > 5 else 0.001
-    device = argv[6] if len(argv) > 6 else 'cpu'
-    model_version = argv[7] if len(argv) > 7 else "4"
-    m = re.match(r'(\d)([d]?)', model_version)
+    dump_interval = int(argv[3]) if len(argv) > 3 else 10
+    batch_size = int(argv[4]) if len(argv) > 4 else 512
+    learning_rate = float(argv[5]) if len(argv) > 5 else 0.001
+    device = argv[6] if len(argv) > 6 else 'cuda'
+    model_version = argv[7] if len(argv) > 7 else "3"
+    
+    m = re.match(r'(\d)-(\d)([d]?)', model_version)
     if m is None:
         print("Invalid model version: {}".format(model_version))
         sys.exit(1)
-    version = int(m.group(1))
-    residual = m.group(2) != 'd'
+    depth = int(m.group(1))
+    version = int(m.group(2))
+    residual = m.group(3) != 'd'
+    
+    prefix= f'resnet{model_version}_'
+    model = resnet.build(depth, version, residual)
     
     trainset, testset = util.load_data('cifar100', data_dir, True, True)
-    
-    prefix= 'resnet-' + str(model_version) + '_'
-    model = resnet.resnet32(version, residual)
-    
+
     file, epn = util.find_latest_model(chkpt_dir, prefix)
     if file is None:
         print("No pretrained model found")
@@ -42,7 +46,7 @@ if __name__ == '__main__':
         acc = util.test(model, testset, batch_size, device=device)
         print("  Accuracy of loaded model: {:.2f}%".format(100*acc))
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = nn.CrossEntropyLoss()
     
     util.process(model, trainset, testset, batch_size, epochs, optimizer, loss_fn,
