@@ -135,6 +135,7 @@ if __name__ == '__main__':
 
     loss_record = []
     diff_record = []
+    time_record = []
     last_loss = np.inf
     delta = 2*epsilon
     for i in range(nepoch):
@@ -155,12 +156,13 @@ if __name__ == '__main__':
             # diff = (dw + db)/n_param
         diff_record.append(dw.cpu().numpy().flatten())
         t = time.time() - t
+        time_record.append(t)
         delta = np.abs(last_loss - running_loss)
         last_loss = running_loss
         eta = t * (nepoch - i)
         print(f'Epoch {i}: loss={running_loss:.6g}, impv={delta:.4g}, diff={diff:.4f}, time={t:.2f}, eta={eta:.2f}')
 
-    fn = f'{fn}_{nepoch}_{epsilon:.0e}'
-    np.save(fn+"_diff.npy", diff_record)
-    torch.save(m_attack.state_dict(), fn+'_model.pt')
+    fn = f'{fn}_{nepoch}'
+    np.savez(fn+"_record.npy", loss_record=loss_record, diff_record=diff_record, time_record=time_record)
+    # torch.save(m_attack.state_dict(), fn+'_model.pt')
 
