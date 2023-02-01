@@ -138,4 +138,8 @@ dmypy.json
 /pypath.bat
 /pypath.sh
 
+*.npy
+*.npz
+*.pt
+
 /plot/*.csv
