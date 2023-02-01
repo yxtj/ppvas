@@ -149,7 +149,7 @@ if __name__ == '__main__':
         loss_record.append(running_loss)
         # compute difference with real model weights
         with torch.no_grad():
-            dw = (m0_a.weight - w).abs()/w
+            dw = ((m0_a.weight - w)/w).abs()
             diff = dw.mean().item()
             # db = (m0_a.bias - b).abs()/b
             # diff = (dw + db)/n_param
