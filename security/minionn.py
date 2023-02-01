@@ -157,7 +157,7 @@ if __name__ == '__main__':
         t = time.time() - t
         delta = np.abs(last_loss - running_loss)
         last_loss = running_loss
-        eta = t / (i+1) * (nepoch - i)
+        eta = t * (nepoch - i)
         print(f'Epoch {i}: loss={running_loss:.6g}, impv={delta:.4g}, diff={diff:.4f}, time={t:.2f}, eta={eta:.2f}')
 
     fn = f'{fn}_{nepoch}_{epsilon:.0e}'
