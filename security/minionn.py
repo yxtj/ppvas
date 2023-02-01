@@ -78,8 +78,8 @@ def train_epoch_cuda(m_attack, loader, loss_fn):
 if __name__ == '__main__':
     args = sys.argv[1:]
     if len(args) < 2:
-        print('Usage: python minionn.py <data_dir> <known_count> [nepoch] [epsilon] [lr] [bs] [device]')
-        print('  default nepoch=1000, epsilon=1e-9, lr=0.01, bs=1000, device=cuda')
+        print('Usage: python minionn.py <data_dir> <known_count> [nepoch] [epsilon] [lr] [bs] [device] [load_to_gpu]')
+        print('  default nepoch=1000, epsilon=1e-9, lr=0.01, bs=1000, device=cuda, load_to_gpu=True')
         exit(0)
     data_dir = args[0]
     weight_path = 'pretrained/minionn.pt'
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     learning_rate = float(args[4]) if len(args) > 4 else 0.01
     batch_size = int(args[5]) if len(args) > 5 else 1000
     device = args[6] if len(args) > 6 else 'cuda'
+    load_to_gpu = args[7].lower() in ['1', 'true', 'yes'] if len(args) > 7 else True
 
     last_idx = weight_path.rfind('.')
     fn = weight_path[weight_path.rfind('/')+1: last_idx if last_idx != -1 else len(weight_path)]
@@ -107,8 +108,12 @@ if __name__ == '__main__':
     # prepare attack data
     m0=model[0]
     print('Preparing attack data')
-    atk_input_x, atk_input_xr, atk_target_x, atk_target_xr =\
-        prepare_attack_data(m0, inshape, dataset, known_count, device)
+    if device != 'cpu' and load_to_gpu == False:
+        atk_input_x, atk_input_xr, atk_target_x, atk_target_xr =\
+            prepare_attack_data(m0, inshape, dataset, known_count, 'cpu')
+    else:
+        atk_input_x, atk_input_xr, atk_target_x, atk_target_xr =\
+            prepare_attack_data(m0, inshape, dataset, known_count, device)
 
     # attack model
     m0_a = copy.deepcopy(m0)
@@ -120,7 +125,10 @@ if __name__ == '__main__':
 
     atk_ds = torch.utils.data.TensorDataset(
         atk_input_x, atk_input_xr, atk_target_x, atk_target_xr)
-    loader = torch.utils.data.DataLoader(atk_ds, batch_size)
+    if device != 'cpu' and load_to_gpu == False:
+        loader = torch.utils.data.DataLoader(atk_ds, batch_size, pin_memory=True)
+    else:
+        loader = torch.utils.data.DataLoader(atk_ds, batch_size)
 
     loss_fn = nn.BCELoss()
     optimizer = torch.optim.Adam(m_attack.parameters(), lr=learning_rate)
