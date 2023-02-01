@@ -86,3 +86,12 @@ def resnet32(version=3, residual=True):
 
 def resnet44(version=3, residual=True):
     return build_resnet([7, 7, 7], 100, version, residual)
+
+def resnet56(version=3, residual=True):
+    return build_resnet([9, 9, 9], 100, version, residual)
+
+def resnet110(version=3, residual=True):
+    return build_resnet([18, 18, 18], 100, version, residual)
+
+def resnet152(version=3, residual=True):
+    return build_resnet([24, 24, 24], 100, version, residual)
