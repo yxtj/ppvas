@@ -23,7 +23,7 @@ if __name__ == '__main__':
     device = argv[6] if len(argv) > 6 else 'cuda'
     model_version = argv[7] if len(argv) > 7 else "3"
     
-    m = re.match(r'(\d)-(\d)([d]?)', model_version)
+    m = re.match(r'(\d+)-(\d)([d]?)', model_version)
     if m is None:
         print("Invalid model version: {}".format(model_version))
         sys.exit(1)
