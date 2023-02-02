@@ -12,7 +12,7 @@ if __name__ == '__main__':
     if len(argv) == 0:
         print("Usage: python resnet.py data_dir chkpt_dir [epochs] [dump_interval] [bs] [lr] [device] [model_version]")
         print("  default epochs: 100, dump_interval: 10, bs: 512, lr: 0.001, device: cuda, model_version: 32-3")
-        print("  model_version: <depth>-<version>[d], where depth is 20, 32, 40; version is 1, 2, 3, 4; 'd' indicates direct/residual")
+        print("  model_version: <depth>-<version>[d], where depth is 20, 32, 44, 56, 110, 156; version is 1, 2, 3, 4; 'd' indicates direct/residual")
         sys.exit(1)
     data_dir = argv[0] # 'E:/Data/CIFAR100'
     chkpt_dir = argv[1] # 'pretrained/'
