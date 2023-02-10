@@ -95,7 +95,7 @@ def build_resnet(num_blocks, num_class=100, version=1, residual=True, batch_norm
         ])
     if not residual:
         layers = [ lyr for lyr in layers if not isinstance(lyr, te.ShortCut) ]
-    layers.append(nn.Softmax(1))
+    #layers.append(nn.Softmax(dim=1))
     return te.SequentialBuffer(*layers)
 
 

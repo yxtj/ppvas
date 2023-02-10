@@ -43,9 +43,9 @@ def build_vgg(layers=16, fc=True):
             nn.Linear(4096, 4096), nn.ReLU(),
             nn.Linear(4096, 1000)
             ]
-        model = nn.Sequential(*l1, nn.Flatten(), *l2, nn.Softmax(dim=1))
+        model = nn.Sequential(*l1, nn.Flatten(), *l2) #, nn.Softmax(dim=1))
     else:
-        model = nn.Sequential(*l1, nn.Softmax(dim=1))
+        model = nn.Sequential(*l1) #, nn.Softmax(dim=1))
     return model
 
 

@@ -34,7 +34,7 @@ def build(weight_path=None):
         
         nn.Flatten(),
         nn.Linear(1024, 10),
-        nn.Softmax(dim=1),
+        #nn.Softmax(dim=1),
     )
     # load pretrained weights
     if weight_path is not None:
