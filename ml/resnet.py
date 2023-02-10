@@ -23,16 +23,17 @@ if __name__ == '__main__':
     device = argv[6] if len(argv) > 6 else 'cuda'
     model_version = argv[7] if len(argv) > 7 else "3"
     
-    m = re.match(r'(\d+)-(\d)([d]?)', model_version)
+    m = re.match(r'(\d+)-(\d)([db]*)', model_version)
     if m is None:
         print("Invalid model version: {}".format(model_version))
         sys.exit(1)
     depth = int(m.group(1))
     version = int(m.group(2))
-    residual = m.group(3) != 'd'
+    residual = 'd' in m.group(3)
+    batch_norm = 'b' in m.group(3)
     
     prefix= f'resnet{model_version}_'
-    model = resnet.build(depth, version, residual)
+    model = resnet.build(depth, version, residual, batch_norm)
     
     trainset, testset = util.load_data('cifar100', data_dir, True, True)
 
