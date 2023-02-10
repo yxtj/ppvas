@@ -188,3 +188,20 @@ show_stack_bar_group(np.array([comm_minionn, comm_resnet])/1000, names, groups, 
 show_stack_bar_group([time_minionn[:-1], time_resnet[:-1]], names[:-1], groups, 'Total execution time (s)', 0.8)
 
 show_stack_bar_group(np.array([comm_minionn[:-1], comm_resnet[:-1]])/1000, names[:-1], groups, 'Total data transferred (GB)', 0.8)
+
+# %% resnet family
+
+names, time_rns = load_time('plot/resnets.csv')
+names, comm_rns = load_comm('plot/resnets.csv')
+
+show_group_bar(time_rns, names, 'Execution time (s)', 0.7, True)
+plt.xticks(np.arange(6), names, rotation=-20)
+plt.ylim(0.01, 8000)
+plt.tight_layout()
+
+
+show_group_bar(time_rns, names, 'Data transferred (MB)', 0.7, True)
+plt.xticks(np.arange(6), names, rotation=-20)
+plt.ylim(0.7, 50000)
+plt.tight_layout()
+
