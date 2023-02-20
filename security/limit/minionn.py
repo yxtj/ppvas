@@ -19,6 +19,8 @@ if __name__ == '__main__':
     device = argv[6] if len(argv) > 6 else 'cpu'
     nlimit = int(argv[7]) if len(argv) > 7 else 0
     
+    torch.manual_seed(0)
+    
     trainset, testset = util.load_data('cifar10', data_dir, True, True)
     trainset = [trainset[i] for i in range(nlimit)]
     testset = [testset[i] for i in range(nlimit)]
