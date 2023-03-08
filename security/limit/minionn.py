@@ -8,7 +8,7 @@ import ml.util as util
 if __name__ == '__main__':
     argv = sys.argv[1:]
     if len(argv) == 0:
-        print("Usage: python minionn.py data_dir chkpt_dir epochs batch_size dump_interval lr device nlimit")
+        print("Usage: python minionn.py data_dir chkpt_dir epochs batch_size dump_interval lr device nlimit rnd")
         sys.exit(1)
     data_dir = argv[0] # 'E:/Data/CIFAR10'
     chkpt_dir = argv[1] # 'pretrained/'
@@ -18,14 +18,18 @@ if __name__ == '__main__':
     lr = float(argv[5]) if len(argv) > 5 else 0.001
     device = argv[6] if len(argv) > 6 else 'cpu'
     nlimit = int(argv[7]) if len(argv) > 7 else 0
+    rnd = argv[8].lower() in ['true', '1', 't', 'y', 'yes'] if len(argv) > 8 else False
     
     torch.manual_seed(0)
     
     trainset, testset = util.load_data('cifar10', data_dir, True, True)
-    trainset = [trainset[i] for i in range(nlimit)]
-    testset = [testset[i] for i in range(nlimit)]
-    if nlimit == 0:
-        nlimit = len(trainset)
+    if nlimit != 0:
+        #nlimit = len(trainset)
+        if rnd:
+            r = torch.randperm(len(trainset))
+            trainset = [trainset[i] for i in r[:nlimit]]
+        else:
+            trainset = [trainset[i] for i in range(nlimit)]
     
     model = minionn.build()
     # model = util.add_softmax(model)
