@@ -49,7 +49,7 @@ def show_acc_bar_group(data, names, legend, width=0.7, whiteedge=False, showvalu
 # act_name = ['Local', 'Scaling\nFaSeNet', 'GC\nDelphi', 'Beaver\nDelphi']
 # act_name = ['Local', 'Scaling\n(FaSeNet)', 'GC\n(Delphi)', 'Beaver\n(Delphi)']
 
-act_name, act_acc = load_acc('accuracy.csv')
+act_name, act_acc = load_acc('activation.csv')
 act_name = break_names(act_name)
 
 # show_acc_bar(act_acc, act_name, 0.7, 0, False)
@@ -59,7 +59,8 @@ plt.ylim(0, 90)
 
 # show_acc_bar(act_acc[1:], act_name[1:], 0.7, 0, False)
 # plt.ylim(0, 85)
-show_acc_bar(act_acc[1:], act_name[1:], 0.7, 0, True)
+show_acc_bar(act_acc[1:], act_name[1:], 0.6, 0, True)
+plt.xlim(-0.5,2.5)
 plt.ylim(0, 90)
 
 
