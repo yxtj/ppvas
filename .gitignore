@@ -134,6 +134,7 @@ dmypy.json
 /reference/
 /log/
 /pretrained/
+/record/
 /poc/
 
 /pypath.bat

@@ -1,29 +1,24 @@
-from .ptobase import ProServer, ProClient
+from .ptobase import ProBaseServer, ProBaseClient
 
 import torch
 import numpy as np
 import comm
-from setting import USE_HE
+from .sshare import gen_add_share, gen_mul_share
 
+__ALL__ = ['ProtocolClient', 'ProtocolServer']
 
-class ProtocolClient(ProClient):
+class ProtocolClient(ProBaseClient):
+    def setup(self, sshape: tuple, rshape: tuple, **kwargs) -> None:
+        super().setup(sshape, rshape, **kwargs)
+        self.r = gen_add_share(sshape)
+    
     def send_offline(self, data: torch.Tensor) -> None:
-        if USE_HE:
-            # encrypt
-            # turn to numpy
-            self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
-        else:
-            self.stat.byte_offline_send += comm.send_torch(self.socket, data)
+        self.stat.byte_offline_send += self._basic_he_send_(data)
 
     def recv_offline(self) -> torch.Tensor:
-        if USE_HE:
-            data, nbytes = comm.recv_he_matrix(self.socket, self.he)
-            # decrypt
-            # turn to torch
-        else:
-            data, nbytes = comm.recv_torch(self.socket)
-        self.stat.byte_offline_recv += nbytes
+        data, nbytes = self._basic_he_recv_()
         self.pre = data
+        self.stat.byte_offline_recv += nbytes
         return data
 
     def send_online(self, data: torch.Tensor) -> None:
@@ -33,24 +28,24 @@ class ProtocolClient(ProClient):
     def recv_online(self) -> torch.Tensor:
         data, nbyte = comm.recv_torch(self.socket)
         self.stat.byte_online_recv += nbyte
-        data  = data + self.pre
+        data = data + self.pre
         return data
 
 
-class ProtocolServer(ProServer):
-    def recv_offline(self) -> torch.Tensor:
-        if USE_HE:
-            data, nbytes = comm.recv_he_matrix(self.socket, self.he)
-        else:
-            data, nbytes = comm.recv_torch(self.socket)
+class ProtocolServer(ProBaseServer):
+    def setup(self, sshape: tuple, rshape: tuple, mlast: torch.Tensor, **kwargs) -> None:
+        super().setup(sshape, rshape, **kwargs)
+        self.mlast = mlast
+        self.m = gen_mul_share(sshape)
+    
+    def recv_offline(self) -> np.ndarray:
+        data, nbytes = self._basic_he_recv_()
+        self.pre = data
         self.stat.byte_offline_recv += nbytes
         return data
         
     def send_offline(self, data: np.ndarray) -> None:
-        if USE_HE:
-            self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
-        else:
-            self.stat.byte_offline_send += comm.send_torch(self.socket, data)
+        self.stat.byte_offline_send += self._basic_he_send_(data)
 
     def recv_online(self) -> torch.Tensor:
         data, nbyte = comm.recv_torch(self.socket)

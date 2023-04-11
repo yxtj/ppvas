@@ -23,3 +23,11 @@ def gen_mul_share(shape: tuple, dtype=None, device=None) -> torch.Tensor:
     '''
     return (__MUL_SHARE_RANGE__ - __POSITIVE_EPS__)*torch.rand(shape, dtype=dtype, device=device) + __POSITIVE_EPS__
 
+
+def gen_rand_pos(shape: tuple, low: float, high: float, dtype=None, device=None) -> torch.Tensor:
+    '''
+    Range: [low, high)
+    mean = (high - low) / 2
+    variance = (high - low)**2/12
+    '''
+    return (high - low)*torch.rand(shape, dtype=dtype, device=device) + low

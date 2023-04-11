@@ -1,4 +1,4 @@
-from .ptobase import ProServer, ProClient
+from .ptobase import ProBaseServer, ProBaseClient
 
 import torch
 import numpy as np
@@ -8,7 +8,7 @@ from typing import Union
 from setting import USE_HE
 
 
-class ProtocolClient(ProClient):
+class ProtocolClient(ProBaseClient):
     def setup(self, sshape: tuple, rshape: tuple) -> None:
         super().setup(sshape, rshape)
     
@@ -42,7 +42,7 @@ class ProtocolClient(ProClient):
         return data
 
 
-class ProtocolServer(ProServer):
+class ProtocolServer(ProBaseServer):
     def __init__(self, s, stat, he):
         super().__init__(s, stat, he)
         self.offline_buffer = None # used to generate random data for offline phase

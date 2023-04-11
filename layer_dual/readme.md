@@ -50,3 +50,14 @@ It requires the pooling stride to be no smaller than the pooling size. This is s
 ## Security
 
 This protocol guarantes the security of both the client's data and the server's network weights.
+
+## Next steps
+
+Use oblivious pseudorandom functions (OPRF) to generate choices.
+
+References:
+
+- https://www.youtube.com/watch?v=0JLAO8GoUQo
+- https://en.wikipedia.org/wiki/Pseudorandom_function_family
+- SoK: Oblivious Pseudorandom Functions
+- https://www.youtube.com/watch?v=eu98j4-FjOU

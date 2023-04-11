@@ -1,4 +1,4 @@
-from .ptobase import ProServer, ProClient
+from .ptobase import ProBaseServer, ProBaseClient
 
 import torch
 import numpy as np
@@ -6,7 +6,7 @@ import comm
 from setting import USE_HE
 
 
-class ProtocolClient(ProClient):
+class ProtocolClient(ProBaseClient):
     def send_offline(self, data: torch.Tensor) -> None:
         if USE_HE:
             # encrypt
@@ -37,7 +37,7 @@ class ProtocolClient(ProClient):
         return data
 
 
-class ProtocolServer(ProServer):
+class ProtocolServer(ProBaseServer):
     def recv_offline(self) -> torch.Tensor:
         if USE_HE:
             data, nbytes = comm.recv_he_matrix(self.socket, self.he)
