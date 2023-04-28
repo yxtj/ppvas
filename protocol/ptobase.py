@@ -15,12 +15,12 @@ class ProtocolBase():
         self.socket = s
         self.stat = stat
         self.he = he
-        self.sshape = None
-        self.rshape = None
+        self.ishape = None
+        self.oshape = None
         
-    def setup(self, sshape:tuple, rshape:tuple, **kwargs) -> None:
-        self.sshape = sshape
-        self.rshape = rshape
+    def setup(self, ishape:tuple, oshape:tuple, **kwargs) -> None:
+        self.ishape = ishape
+        self.oshape = oshape
 
     def send_offline(self, data: Union[torch.Tensor, np.ndarray]) -> None:
         raise NotImplementedError
@@ -63,8 +63,8 @@ class ProBaseClient(ProtocolBase):
         self.r = None
         self.pre = None
     
-    def setup(self, sshape:tuple, rshape:tuple, **kwargs) -> None:
-        super().setup(sshape, rshape)
+    def setup(self, ishape:tuple, oshape:tuple, **kwargs) -> None:
+        super().setup(ishape, oshape)
         if USE_HE:
             b_ctx = self.he.to_bytes_context()
             self.socket.sendall(struct.pack('!i', len(b_ctx)) + b_ctx)
@@ -77,8 +77,9 @@ class ProBaseServer(ProtocolBase):
         self.mlast = None
         self.m = None
     
-    def setup(self, sshape: tuple, rshape: tuple, **kwargs) -> None:
-        super().setup(sshape, rshape)
+    def setup(self, ishape: tuple, oshape: tuple, mlast: Union[torch.Tensor, int, float], **kwargs) -> None:
+        super().setup(ishape, oshape)
+        self.mlast = mlast
         if USE_HE:
             len = struct.unpack('!i', self.socket.recv(4))[0]
             b_ctx = self.socket.recv(len)

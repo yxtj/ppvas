@@ -9,8 +9,8 @@ from setting import USE_HE
 
 
 class ProtocolClient(ProBaseClient):
-    def setup(self, sshape: tuple, rshape: tuple) -> None:
-        super().setup(sshape, rshape)
+    def setup(self, ishape: tuple, oshape: tuple) -> None:
+        super().setup(ishape, oshape)
     
     def send_offline(self, data: torch.Tensor) -> None:
         if USE_HE:
@@ -47,31 +47,31 @@ class ProtocolServer(ProBaseServer):
         super().__init__(s, stat, he)
         self.offline_buffer = None # used to generate random data for offline phase
     
-    def setup(self, sshape: tuple, rshape: tuple, mlast: torch.Tensor, Rlast: torch.Tensor) -> None:
-        super().setup(sshape, rshape, mlast)
-        assert len(Rlast) == np.prod(self.rshape)
+    def setup(self, ishape: tuple, oshape: tuple, mlast: torch.Tensor, Rlast: torch.Tensor) -> None:
+        super().setup(ishape, oshape, mlast)
+        assert len(Rlast) == np.prod(self.oshape)
         self.Rlast = Rlast
-        n = np.prod(sshape)
-        self.S = torch.randperm(n).reshape(self.sshape) # shuffle matrix
-        self.R = torch.argsort(self.S.ravel()).reshape(self.sshape) # unshuffle matrix
+        n = np.prod(ishape)
+        self.S = torch.randperm(n).reshape(self.ishape) # shuffle matrix
+        self.R = torch.argsort(self.S.ravel()).reshape(self.ishape) # unshuffle matrix
     
     def confuse_data(self, data: torch.Tensor) -> torch.Tensor:
         '''
         Shuffle input data.
-        Input: a tensor of shape "self.sshape".
-        Output: a tensor of shape "self.sshape".
+        Input: a tensor of shape "self.ishape".
+        Output: a tensor of shape "self.ishape".
         '''
-        res = data.ravel()[self.S].reshape(self.sshape)
+        res = data.ravel()[self.S].reshape(self.ishape)
         return res
     
     def clearify_data(self, data: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
         '''
         Pick and unshuffle.
-        Input: a tensor of shape "self.rshape".
-        Output: a tensor of shape "self.rshape".
+        Input: a tensor of shape "self.oshape".
+        Output: a tensor of shape "self.oshape".
         '''
-        #assert len(self.Rlast) == 2*np.prod(self.rshape) == np.prod(data.shape)
-        res = data.ravel()[self.Rlast].reshape(self.rshape)
+        #assert len(self.Rlast) == 2*np.prod(self.oshape) == np.prod(data.shape)
+        res = data.ravel()[self.Rlast].reshape(self.oshape)
         return res
     
     def recv_offline(self) -> torch.Tensor:

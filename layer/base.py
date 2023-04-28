@@ -32,17 +32,12 @@ class LayerClient(LayerCommon):
         # print("pre", self.protocol.pre)
         self.stat.time_offline += time.time() - t
     
-    def online(self, xmdual) -> tuple[torch.Tensor, torch.Tensor]:
+    def online(self, xm) -> tuple[torch.Tensor, torch.Tensor]:
         t = time.time()
         # print("xm", xm)
-        # if isinstance(xmdual, torch.Tensor):
-        if self.is_input_layer:
-            xmdual = (xmdual, xmdual)
-        self.protocol.send_online(xmdual[0], xmdual[1])
+        self.protocol.send_online(xm)
         data = self.protocol.recv_online()
         # print("wxm", data)
-        if self.is_output_layer:
-            data = data[0]
         self.stat.time_online += time.time() - t
         return data
     
@@ -84,70 +79,17 @@ class LayerServer(LayerCommon):
         self.layer = layer
         self.mlast = None
         self.hlast = None
-        self.m = None
-        #self.m_neg = None
-        self.h = None # binary mask
-        self.ma, self.mb = None, None
-        self.otr = None # oblivious transfer receiver
+        self.protocol = ProtocolServer(socket, self.stat, self.he)
+        # self.m = None
+        # #self.m_neg = None
+        # self.h = None # binary mask
+        # self.ma, self.mb = None, None
+        # self.otr = None # oblivious transfer receiver
     
     def setup(self, last_lyr: LayerCommon, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
-        '''
-        Setup the layer's parameters for data transmission protocol.
-        Both for receiving ("m", "h" of last layer), and sending ("m", "h", "ma", "mb" of this layer). 
-        If "last_lyr" is None, this is the first layer, set "mlast" and "hlast" to 1.
-        If "m" is not given (either a tensor or a value), m will be set randomly.
-        If "m" is a tensor, there must be "h", "ma", "mb" tensors in the "kwargs" to set the corresponding values.
-        
-        "ot_nbits" is use in every layer in this protocol, to set up the number of bits for OT.
-        Some parameters in "kwargs" can be used in derived classes.
-        '''
         t = time.time()
-        # set m and h for last layer
-        if last_lyr is None:
-            self.mlast = torch.ones(self.ishape)
-            self.hlast = torch.ones(self.ishape, dtype=torch.bool)
-        else:
-            assert isinstance(last_lyr, LayerServer)
-            assert last_lyr.m.shape == last_lyr.h.shape == self.ishape
-            self.mlast = last_lyr.m
-            self.hlast = last_lyr.h
-        # set m and h for this layer
-        if m is None:
-            self.m = gen_mul_share(self.oshape)
-            m_neg = -gen_mul_share(self.oshape)
-            self.h = torch.randint(0, 2, self.oshape, dtype=torch.bool)
-            self.ma = merge_by_h(self.m, m_neg, self.h)
-            self.mb = merge_by_h(m_neg, self.m, self.h)
-        elif isinstance(m, (int, float)):
-            self.m = torch.zeros(self.oshape) + m
-            # m_neg = self.m
-            self.h = torch.ones(self.oshape, dtype=torch.bool)
-            self.ma = self.m
-            self.mb = self.m
-        elif isinstance(m, torch.Tensor):
-            assert m.shape == self.oshape
-            assert 'h' in kwargs and isinstance(kwargs['h'], torch.Tensor)
-            assert 'ma' in kwargs and isinstance(kwargs['ma'], torch.Tensor)
-            assert 'mb' in kwargs and isinstance(kwargs['mb'], torch.Tensor)
-            self.m = m
-            self.h = kwargs['h']
-            self.ma = kwargs['ma']
-            self.mb = kwargs['mb']
-            assert self.h.shape == self.oshape
-            # the following check only holds when last layer is not max/min-pooling
-            # assert self.ma.shape == self.oshape
-            # assert self.mb.shape == self.oshape
-        else:
-            raise TypeError("m should be a number or a tensor")
-        # set oblivious transfer
-        if not isinstance(self, LocalLayerServer):
-            if 'ot_nbits' not in kwargs:
-                nbits = 1024
-            else:
-                assert isinstance(kwargs['ot_nbits'], int)
-                nbits = kwargs['ot_nbits']
-            self.otr = comm.ObliviousTransferReceiver(self.socket, nbits)
-            self.otr.setup()
+        mlast = last_lyr.m if last_lyr else None
+        self.protocol.setup(self.ishape, self.oshape, mlast, m=m)
         self.stat.time_offline += time.time() - t
     
     def offline(self) -> np.ndarray:
@@ -160,16 +102,11 @@ class LayerServer(LayerCommon):
 
     def recv_offline(self) -> np.ndarray:
         # receive r by HE -> divide m_last
-        data = self.recv_he() # r_i
-        data = self.reconstruct_mul_data(data, self.mlast) # r_i/m_{i-1}
+        data = self.protocol.recv_offline()
         return data
 
     def send_offline(self, data) -> None:
-        # send d*ma and d*mb
-        wrma = self.construct_mul_share(data, self.ma) # r_i/m_{i-1} .* m_i
-        wrmb = self.construct_mul_share(data, self.mb)
-        self.send_he(wrma)
-        self.send_he(wrmb)
+        self.protocol.send_offline(data)
 
     def run_layer_offline(self, data:torch.Tensor) -> torch.Tensor:
         bias = self.layer.bias
@@ -179,38 +116,11 @@ class LayerServer(LayerCommon):
         return data
 
     def recv_online(self):
-        # receive multiplicative share with OT -> reconstruct
-        # TODO: use a bit serializer
-        h_bytes = self.hlast.numpy().tobytes()
-        data, ns, nr = self.otr.run_customized(h_bytes) # x_i m_{i-1} - r_i
-        data = comm.deserialize_torch(data)
-        data = self.reconstruct_mul_data(data) # x_i - r_i/m_{i-1}
-        self.stat.byte_online_send += ns
-        self.stat.byte_online_recv += nr
+        data = self.protocol.recv_online()
         return data
     
     def send_online(self, xr):
-        # construct multiplicative shares -> send
-        xrma = self.construct_mul_share(xr, self.ma) # f(x_i - r_i/m_{i-1}) .* m_i
-        xrmb = self.construct_mul_share(xr, self.mb)
-        self.send_plain(xrma)
-        self.send_plain(xrmb)
-    
-    def construct_mul_share(self, data, m):
-        '''
-        Construct multiplicative share for sending online data.
-        Multiply m to data.
-        '''
-        return data*m
-    
-    def reconstruct_mul_data(self, share, mlast = None):
-        '''
-        Reconstruct data from the multiplicative share for received online data.
-        Divide mlast from share.
-        '''
-        if mlast is None:
-            mlast = self.mlast
-        return share / mlast
+        self.protocol.send_online(xr)
 
 
 # local layer specialization
@@ -222,7 +132,7 @@ class LocalLayerClient(LayerClient):
     def offline(self) -> None:
         return
 
-    def online(self, xm) -> tuple[torch.Tensor, torch.Tensor]:
+    def online(self, xm) -> torch.Tensor:
         raise NotImplementedError
 
 class LocalLayerServer(LayerServer):
