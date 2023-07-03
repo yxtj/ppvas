@@ -28,11 +28,11 @@ class LayerClient(LayerCommon):
         t = time.time()
         # print("r", self.protocol.r)
         self.protocol.send_offline(self.r)
-        self.protocol.recv_offline()
+        self.pre = self.protocol.recv_offline()
         # print("pre", self.protocol.pre)
         self.stat.time_offline += time.time() - t
     
-    def online(self, xm) -> tuple[torch.Tensor, torch.Tensor]:
+    def online(self, xm) -> torch.Tensor:
         t = time.time()
         # print("xm", xm)
         self.protocol.send_online(xm)

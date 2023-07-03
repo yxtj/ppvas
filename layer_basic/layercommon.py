@@ -1,4 +1,5 @@
-import socket
+from socket import socket
+from typing import Union
 import numpy as np
 import torch
 from Pyfhel import Pyfhel
@@ -25,12 +26,14 @@ class LayerCommon():
         self.stat.byte_online_recv += nbyte
         return data
 
-    def send_he(self, data:np.ndarray) -> None:
+    def send_he(self, data:Union[np.ndarray, torch.Tensor]) -> None:
         if USE_HE:
             # actual send with HE
+            assert isinstance(data, np.ndarray)
             self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
         else:
             # simulate with plain
+            assert isinstance(data, torch.Tensor)
             self.stat.byte_offline_send += comm.send_torch(self.socket, data)
     
     def recv_he(self) -> np.ndarray:
