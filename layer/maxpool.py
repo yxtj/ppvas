@@ -16,16 +16,9 @@ class MaxPoolClient(LayerClient):
         
     def online(self, xm) -> torch.Tensor:
         t = time.time()
-        if self.is_input_layer:
-            xm = (xm, xm)
-        self.send_online(xm[0], xm[1])
-        data = self.recv_online() # x .* mp
-        ya = self.layer(data[0]) # max_pool(x) .* m
-        yb = self.layer(data[1])
-        if self.is_output_layer:
-            data = ya
-        else:
-            data = (ya, yb)
+        self.protocol.send_online(xm) # send: x_i .* m_{i-1} - r_i
+        data = self.protocol.recv_online() # x .* mp
+        data = self.layer(data) # max_pool(x) .* m
         self.stat.time_online += time.time() - t
         return data
 
@@ -56,10 +49,12 @@ class MaxPoolServer(LayerServer):
     def setup(self, last_lyr: LayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         super().setup(last_lyr, m)
         t = time.time()
-        # update ma and mb (the mp of the smp protocol)
+        pto = self.protocol
+        # set mp
         block = torch.ones(self.stride_shape)
-        self.ma = torch.kron(self.ma, block) # kronecker product
-        self.mb = torch.kron(self.mb, block) # kronecker product
+        mp = torch.kron(pto.m, block) # kronecker product
+        pto.m = mp
+        # print("mp", mp)
         self.stat.time_offline += time.time() - t
         
     def cut_input(self, x: Union[torch.Tensor, np.ndarray]) -> Union[torch.Tensor, np.ndarray]:
@@ -72,17 +67,17 @@ class MaxPoolServer(LayerServer):
     
     def offline(self) -> np.ndarray:
         t = time.time()
-        rm = self.recv_offline() # rm = r_i / m_{i-1}
+        rm = self.protocol.recv_offline() # rm = r_i / m_{i-1}
         data = self.cut_input(rm)
-        self.send_offline(data)
+        self.protocol.send_offline(data) # r_i / m_{i-1} .* m^p_{i} - s_i
         self.stat.time_offline += time.time() - t
         return rm
-        
+    
     def online(self) -> torch.Tensor:
         t = time.time()
-        xrm = self.recv_online() # xrm = (x_i - r_i / m_{i-1})
-        data = self.cut_input(xrm)
-        self.send_online(data)
+        xrm = self.protocol.recv_online() # xrm = (x_i - r_i / m_{i-1})
+        data = self.cut_input(xrm) 
+        self.protocol.send_online(data) # (x_i - r_i / m_{i-1}) .* m^p_{i} + s_i
         self.stat.time_online += time.time() - t
         return xrm
     

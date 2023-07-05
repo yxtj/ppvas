@@ -19,17 +19,17 @@ class ConvServer(LayerServer):
     
     def offline(self) -> np.ndarray:
         t = time.time()
-        rm = self.recv_offline() # r'_i = r_i / m_{i-1}
+        rm = self.protocol.recv_offline() # recv: r'_i = r_i / m_{i-1}
         data = self.run_layer_offline(rm) # W_i * r'_i
-        self.send_offline(data)
+        self.protocol.send_offline(data) # send: (W_i * r'_i) .* m_i - s_i
         self.stat.time_offline += time.time() - t
         return rm
     
     def online(self) -> torch.Tensor:
         t = time.time()
-        xmr_i = self.recv_online() # xmr_i = x_i - r_i / m_{i-1}
+        xmr_i = self.protocol.recv_online() # recv: xmr_i = x_i - r_i / m_{i-1}
         data = self.layer(xmr_i) # W_i * (x_i - r_i / m_{i-1})
-        self.send_online(data)
+        self.protocol.send_online(data) # send: (W_i * (x_i - r_i / m_{i-1})) .* m_i + s_i
         self.stat.time_online += time.time() - t
         return xmr_i
 

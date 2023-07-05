@@ -1,4 +1,4 @@
-from .ptobase import ProBaseServer, ProBaseClient
+from .ptobase import ProBaseServer, ProBaseClient, NumberType
 
 import torch
 import numpy as np
@@ -9,30 +9,11 @@ from setting import USE_HE
 
 
 class ProtocolClient(ProBaseClient):
-    def setup(self, ishape: tuple, oshape: tuple) -> None:
-        super().setup(ishape, oshape)
-    
-    def send_offline(self, data: torch.Tensor) -> None:
-        if USE_HE:
-            # encrypt
-            # turn to numpy
-            self.stat.byte_offline_send += comm.send_he_matrix(self.socket, data, self.he)
-        else:
-            self.stat.byte_offline_send += comm.send_torch(self.socket, data)
-
-    def recv_offline(self) -> torch.Tensor:
-        if USE_HE:
-            data, nbytes = comm.recv_he_matrix(self.socket, self.he)
-            # decrypt
-            # turn to torch
-        else:
-            data, nbytes = comm.recv_torch(self.socket)
-        self.stat.byte_offline_recv += nbytes
-        self.pre = data
-        return data
+    def setup(self, ishape: tuple, oshape: tuple, r: NumberType=None) -> None:
+        super().setup(ishape, oshape, r)
 
     def send_online(self, data: torch.Tensor) -> None:
-        data = data + self.r
+        data = data - self.r
         self.stat.byte_online_send += comm.send_torch(self.socket, data)
 
     def recv_online(self) -> torch.Tensor:
@@ -47,8 +28,11 @@ class ProtocolServer(ProBaseServer):
         super().__init__(s, stat, he)
         self.offline_buffer = None # used to generate random data for offline phase
     
-    def setup(self, ishape: tuple, oshape: tuple, mlast: torch.Tensor, Rlast: torch.Tensor) -> None:
-        super().setup(ishape, oshape, mlast)
+    def setup(self, ishape: tuple, oshape: tuple, s: NumberType=None, m: NumberType=None,
+              last: ProBaseServer=None, **kwargs) -> None:
+            #   mlast: NumberType=1, Rlast: torch.Tensor=None
+        super().setup(ishape, oshape, s, m, last, **kwargs)
+        Rlast = last.Rlast if last is not None else None
         assert len(Rlast) == np.prod(self.oshape)
         self.Rlast = Rlast
         n = np.prod(ishape)

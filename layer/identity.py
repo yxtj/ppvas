@@ -18,14 +18,14 @@ class IdentityServer(LayerServer):
     
     def offline(self) -> torch.Tensor:
         t = time.time()
-        rm = self.recv_offline() # r_i * m_{i-1}
-        self.send_offline(rm)
+        rm = self.protocol.recv_offline()
+        self.protocol.send_offline(rm)
         self.stat.time_offline += time.time() - t
         return rm
     
     def online(self) -> torch.Tensor:
         t = time.time()
-        xrm = self.recv_online() # x_i - r_i * m_{i-1}
-        self.send_online(xrm)
+        xrm = self.protocol.recv_online()
+        self.protocol.send_online(xrm)
         self.stat.time_online += time.time() - t
         return xrm

@@ -14,8 +14,8 @@ class ShortCutClient(LayerClient):
         super().__init__(socket, ishape, oshape, he)
     
     def setup(self, r_other: torch.Tensor, **kwargs) -> None:
-        super().setup()
         assert self.ishape == r_other.shape
+        super().setup(**kwargs)
     
 class ShortCutServer(LayerServer):
     def __init__(self, socket: socket, ishape: tuple, oshape: tuple, layer: torch.nn.Module) -> None:
@@ -26,17 +26,17 @@ class ShortCutServer(LayerServer):
     
     def offline(self, rm_j) -> torch.Tensor:
         t = time.time()
-        rm_i = self.recv_offline() # r_i/m_{i-1}
+        rm_i = self.protocol.recv_offline() # r_i/m_{i-1}
         data = rm_i + rm_j # r_i / m_{i-1} + r_j / m_{j-1}
-        self.send_offline(data)
+        self.protocol.send_offline(data)
         self.stat.time_offline += time.time() - t
         return rm_i
     
     def online(self, xmr_j) -> torch.Tensor:
         t = time.time()
-        xrm_i = self.recv_online() # x_i - r_i / m_{i-1}
+        xrm_i = self.protocol.recv_online() # x_i - r_i / m_{i-1}
         data = xrm_i + xmr_j # (x_i + x_j) - (r_i / m_{i-1} - r_j / m_{j-1})
-        self.send_online(data)
+        self.protocol.send_online(data)
         self.stat.time_online += time.time() - t
         return xrm_i
     

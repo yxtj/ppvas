@@ -12,16 +12,9 @@ class FlattenClient(LocalLayerClient):
         super().__init__(socket, ishape, oshape, he)
         self.layer = torch.nn.Flatten()
     
-    def online(self, xm) -> tuple[torch.Tensor, torch.Tensor]:
+    def online(self, xm) -> torch.Tensor:
         t = time.time()
-        if self.is_input_layer:
-            xm = (xm, xm)
-        ya = self.layer(xm[0])
-        yb = self.layer(xm[1])
-        if self.is_output_layer:
-            data = ya
-        else:
-            data = (ya, yb)
+        data = self.layer(xm)
         self.stat.time_online += time.time() - t
         return data
 
@@ -32,15 +25,10 @@ class FlattenServer(LocalLayerServer):
         super().__init__(socket, ishape, oshape, layer)
         
     def setup(self, last_lyr: LocalLayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
-        if last_lyr is None:
-            super().setup(last_lyr, m)
-        else:
-            t = time.time()
-            m = self.layer(last_lyr.m)
-            h = self.layer(last_lyr.h)
-            ma = self.layer(last_lyr.ma)
-            mb = self.layer(last_lyr.mb)
-            self.stat.time_offline += time.time() - t
-            super().setup(last_lyr, m, h=h, ma=ma, mb=mb)
-        
+        # flatten the last m and forward to the next layer
+        t = time.time()
+        last_pto = last_lyr.protocol if last_lyr is not None else None
+        m = self.layer(last_pto.m) if last_pto is not None else None
+        self.protocol.setup(self.ishape, self.oshape, s=0, m=m, last=last_pto)
+        self.stat.time_offline += time.time() - t
     
