@@ -30,7 +30,7 @@ class ProtocolClient(ProBaseClient):
 class ProtocolServer(ProBaseServer):
     def recv_offline(self) -> Union[torch.Tensor, np.ndarray]:
         data = self.basic_recv_offline()
-        if self.mlast != 1:
+        if not (isinstance(self.mlast, (int, float)) and self.mlast != 1):
             data /= self.mlast
         return data
     

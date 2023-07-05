@@ -51,7 +51,7 @@ class LayerServer(LayerCommon):
     
     def setup(self, last_lyr: LayerCommon, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         t = time.time()
-        assert isinstance(last_lyr, LayerServer)
+        assert last_lyr is None or isinstance(last_lyr, LayerServer)
         last_pto = last_lyr.protocol if last_lyr is not None else None
         self.protocol.setup(self.ishape, self.oshape, s=None, m=m, last=last_pto)
         self.stat.time_offline += time.time() - t

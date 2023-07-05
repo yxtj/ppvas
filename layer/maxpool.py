@@ -1,4 +1,5 @@
 from .base import LayerClient, LayerServer
+from .base import ProtocolServer
 
 from socket import socket
 from typing import Union
@@ -45,15 +46,19 @@ class MaxPoolServer(LayerServer):
         
         super().__init__(socket, ishape, oshape, layer)
         self.stride_shape = stride_shape
+        # make a protocol for pooling (its output shape is the same as the input shape)
+        self.protocol_pool = ProtocolServer(self.socket, self.stat, self.he)
     
     def setup(self, last_lyr: LayerServer, m: Union[torch.Tensor, float, int]=None, **kwargs) -> None:
         super().setup(last_lyr, m)
         t = time.time()
+        last_pto = last_lyr.protocol if last_lyr is not None else None
         pto = self.protocol
-        # set mp
+        # set mp and sp
         block = torch.ones(self.stride_shape)
         mp = torch.kron(pto.m, block) # kronecker product
-        pto.m = mp
+        sp = torch.rand_like(mp)
+        self.protocol_pool.setup(self.ishape, mp.shape, s=sp, m=mp, last=last_pto)
         # print("mp", mp)
         self.stat.time_offline += time.time() - t
         
@@ -67,17 +72,17 @@ class MaxPoolServer(LayerServer):
     
     def offline(self) -> np.ndarray:
         t = time.time()
-        rm = self.protocol.recv_offline() # rm = r_i / m_{i-1}
+        rm = self.protocol_pool.recv_offline() # rm = r_i / m_{i-1}
         data = self.cut_input(rm)
-        self.protocol.send_offline(data) # r_i / m_{i-1} .* m^p_{i} - s_i
+        self.protocol_pool.send_offline(data) # r_i / m_{i-1} .* m^p_{i} - s_i
         self.stat.time_offline += time.time() - t
         return rm
     
     def online(self) -> torch.Tensor:
         t = time.time()
-        xrm = self.protocol.recv_online() # xrm = (x_i - r_i / m_{i-1})
+        xrm = self.protocol_pool.recv_online() # xrm = (x_i - r_i / m_{i-1})
         data = self.cut_input(xrm) 
-        self.protocol.send_online(data) # (x_i - r_i / m_{i-1}) .* m^p_{i} + s_i
+        self.protocol_pool.send_online(data) # (x_i - r_i / m_{i-1}) .* m^p_{i} + s_i
         self.stat.time_online += time.time() - t
         return xrm
     

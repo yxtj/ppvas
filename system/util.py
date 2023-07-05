@@ -5,12 +5,12 @@ import torch_extension.shortcut as te
 from layer_basic.stat import Stat
 
 
-from setting import PROTOCOL
-if PROTOCOL == 'dual':
-    import layer_dual as layer
-else:
-    import layer_smp as layer
-    
+# from setting import PROTOCOL
+# if PROTOCOL == 'dual':
+#     import layer_dual as layer
+# else:
+#     import layer_smp as layer
+import layer
 
 def compute_shape(model, inshape):
     if len(inshape) == 3:

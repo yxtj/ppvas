@@ -68,7 +68,7 @@ class ProtocolBase():
                 res = torch.from_numpy(v)
             elif isinstance(v, (int, float)):
                 # res = v
-                if res == 0:
+                if v == 0:
                     res = torch.zeros(shape)
                 elif v == 1:
                     res = torch.ones(shape)
