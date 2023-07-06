@@ -4,6 +4,7 @@ from Pyfhel import Pyfhel
 
 from model import resnet
 from system.runner import run_client, run_server
+from setting import USE_HE
 
 if __name__ == '__main__':
     argv = sys.argv
@@ -28,6 +29,10 @@ if __name__ == '__main__':
     if mode == 'server':
         run_server(host, port, model, inshape, n)
     else:
-        he = Pyfhel()
-        he.contextGen(scheme='ckks', n=2**13, scale=2**30, qi_sizes=[30]*5)
+        if USE_HE:
+            he = Pyfhel()
+            he.contextGen(scheme='ckks', n=2**13, scale=2**30, qi_sizes=[30]*5)
+            he.keyGen()
+        else:
+            he = None
         run_client(host, port, model, inshape, he, None, n, True)
