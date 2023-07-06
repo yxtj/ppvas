@@ -24,14 +24,10 @@ class Client():
         for i, lyr in enumerate(self.layers):
             print('  offline {}: {} ...'.format(i, lyr.__class__.__name__))
             # setup
-            is_input_layer = i == 0
-            is_output_layer = i == len(self.layers) - 1
-            if i in self.shortcuts:
-                idx = self.shortcuts[i]
-                r_other = self.layers[idx].r
-                lyr.setup(r_other, is_input_layer=is_input_layer, is_output_layer=is_output_layer)
-            else:
-                lyr.setup(is_input_layer=is_input_layer, is_output_layer=is_output_layer)
+            # is_input_layer = i == 0
+            # is_output_layer = i == len(self.layers) - 1
+            lyr.setup()
+            # lyr.setup(is_input_layer=is_input_layer, is_output_layer=is_output_layer)
             # offline
             lyr.offline()
             

@@ -14,8 +14,8 @@ __all__ = ['LayerClient', 'LayerServer', 'LocalLayerClient', 'LocalLayerServer']
 class LayerClient(LayerCommon):
     def __init__(self, socket:socket, ishape:tuple, oshape:tuple, he:Pyfhel) -> None:
         super().__init__(socket, ishape, oshape, he)
-        self.is_input_layer = False
-        self.is_output_layer = False
+        # self.is_input_layer = False
+        # self.is_output_layer = False
         self.protocol = ProtocolClient(socket, self.stat, he)
     
     def setup(self, **kwargs):
